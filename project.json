@@ -1,0 +1,8 @@
+{
+  "name": "alambda",
+  "description": "Lambda to SNS test",
+  "memory": 128,
+  "timeout": 5,
+  "role": "arn:aws:iam::812644853088:role/alambda_lambda_function",
+  "environment": {}
+}
