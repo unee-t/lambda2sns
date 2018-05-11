@@ -4,6 +4,8 @@ go:
 - tip
 before_install:
 - curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sudo sh
+install:
+- go get -t ./...
 deploy:
  # dev
  - provider: script

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/unee-t/lambda2sns.svg?branch=master)](https://travis-ci.org/unee-t/lambda2sns)
+
 	lambda: arn:aws:lambda:ap-southeast-1:812644853088:function:alambda_simple
 	sns: arn:aws:sns:ap-southeast-1:812644853088:atest
 
