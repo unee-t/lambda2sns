@@ -24,3 +24,28 @@ Then you should get an email of the JSON payload.
 	"Response: {\n  MessageId: \"894a7693-2239-554f-b78a-25dc9de5a5d8\"\n}"
 
 Using [apex](http://apex.run/) with AWS_PROFILE **uneet-dev** in **ap-southeast-1**
+
+# Setup
+
+## lambda role
+
+Assuming project.demo.json is created with correct profile.
+
+	apex -r ap-southeast-1 --env demo init
+
+## sns topic
+
+	[hendry@t480s alambda]$ aws --profile uneet-demo sns create-topic --name atest
+	{
+		"TopicArn": "arn:aws:sns:ap-southeast-1:915001051872:atest"
+	}
+	[hendry@t480s alambda]$ aws --profile uneet-prod sns create-topic --name atest
+	{
+		"TopicArn": "arn:aws:sns:ap-southeast-1:192458993663:atest"
+	}
+
+How to subscribe:
+
+	aws --profile uneet-prod sns subscribe --protocol email --topic-arn arn:aws:sns:ap-southeast-1:192458993663:atest --notification-endpoint youremail@example.com
+
+Don't forget to confirm the subscription.

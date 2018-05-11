@@ -1,0 +1,7 @@
+{
+  "name": "alambda",
+  "description": "Lambda to SNS test",
+  "profile": "uneet-demo",
+  "region": "ap-southeast-1",
+  "role": "arn:aws:iam::915001051872:role/alambda_lambda_function"
+}
