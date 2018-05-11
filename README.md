@@ -42,7 +42,7 @@ How to subscribe:
 
 Don't forget to confirm the subscription.
 
-# Wonderful world of time wasting permission errors the drive me nuts
+# Wonderful world of time wasting permission errors
 
 	Lambda API returned error: Missing Credentials: Cannot instantiate Lambda Client
 
