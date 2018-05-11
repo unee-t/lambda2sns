@@ -30,7 +30,7 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 
 	snssvc := sns.New(cfg)
 	snsreq := snssvc.PublishRequest(&sns.PublishInput{
-		Message:  aws.String(fmt.Sprintf("Ctx: %s\nEvt: %s\n", ctx, evt)),
+		Message:  aws.String(fmt.Sprintf("Ctx: %s\nEvent: %s\n", ctx, evt)),
 		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:atest", aws.StringValue(result.Account))),
 	})
 

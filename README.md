@@ -15,15 +15,7 @@ Then you should get an email of the JSON payload.
 
 # Deploy and test
 
-	[hendry@t480s alambda]$ apex deploy
-	   • config unchanged          env= function=simple
-	   • updating function         env= function=simple
-	   • updated alias current     env= function=simple version=5
-	   • function updated          env= function=simple name=alambda_simple version=5
-	[hendry@t480s alambda]$ apex invoke simple < event.json
-	"Response: {\n  MessageId: \"894a7693-2239-554f-b78a-25dc9de5a5d8\"\n}"
-
-Using [apex](http://apex.run/) with AWS_PROFILE **uneet-dev** in **ap-southeast-1**
+	make
 
 # Setup
 
@@ -55,3 +47,12 @@ Don't forget to confirm the subscription.
 	Lambda API returned error: Missing Credentials: Cannot instantiate Lambda Client
 
 Read: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/AuroraMySQL.Integrating.Lambda.html#AuroraMySQL.Integrating.LambdaAccess
+
+* https://console.aws.amazon.com/iam/home?region=ap-southeast-1#/roles/Aurora_access_to_lambda?section=permissions
+
+* AWSLambdaFullAccess should simply have the managed policy **AWSLambdaFullAccess** attached.
+* Modify IAM role on the Cluster
+* Ensure the cluster parameter group has the arn:aws:iam::\*:role/Aurora_access_to_lambda defined in **aws_default_lambda_role**!
+
+<img src=https://s.natalian.org/2018-05-11/lambda-aurora.png>
+<img src=https://s.natalian.org/2018-05-11/1526021466_2558x1406.png>
