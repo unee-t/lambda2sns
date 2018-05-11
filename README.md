@@ -49,3 +49,9 @@ How to subscribe:
 	aws --profile uneet-prod sns subscribe --protocol email --topic-arn arn:aws:sns:ap-southeast-1:192458993663:atest --notification-endpoint youremail@example.com
 
 Don't forget to confirm the subscription.
+
+# Wonderful world of time wasting permission errors the drive me nuts
+
+	Lambda API returned error: Missing Credentials: Cannot instantiate Lambda Client
+
+Read: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/AuroraMySQL.Integrating.Lambda.html#AuroraMySQL.Integrating.LambdaAccess
