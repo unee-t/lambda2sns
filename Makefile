@@ -1,4 +1,5 @@
-all: dev demo prod
+all:
+	@echo make {dev,demo,prod} to deploy
 
 dev:
 	@echo $$AWS_ACCESS_KEY_ID
