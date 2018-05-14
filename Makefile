@@ -1,12 +1,15 @@
 all: dev demo prod
 
 dev:
+	@echo $$AWS_ACCESS_KEY_ID
 	apex -r ap-southeast-1 --env dev deploy
 
 demo:
+	@echo $$AWS_ACCESS_KEY_ID
 	apex -r ap-southeast-1 --env demo deploy
 
 prod:
+	@echo $$AWS_ACCESS_KEY_ID
 	apex -r ap-southeast-1 --env prod deploy
 
 testdev:
