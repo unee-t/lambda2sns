@@ -21,16 +21,17 @@ domain() {
 }
 
 
-for STAGE in demo dev prod
+for STAGE in dev demo prod
 do
+
+echo $STAGE
 
 ssm() {
 	aws --profile uneet-$STAGE ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text
 }
 
-echo mysql -h $(domain $STAGE) -P 3306 -u root --password=$(ssm MYSQL_ROOT_PASSWORD)
+echo mysql -h $(domain $STAGE) -P 3306 -u bugzilla --password=$(ssm MYSQL_PASSWORD)
 
-echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple',  '{ \"operation\" : \"$STAGE $(date)\" }' );"  |
-	mysql -h $(domain $STAGE) -P 3306 -u root --password=$(ssm MYSQL_ROOT_PASSWORD)
-
+echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple',  '{ \"operation\" : \"bugzilla $STAGE $(date)\" }' );"  |
+	mysql -h $(domain $STAGE) -P 3306 -u bugzilla --password=$(ssm MYSQL_PASSWORD)
 done
