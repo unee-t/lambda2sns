@@ -1,0 +1,11 @@
+{
+  "notification_type": "case_new",
+  "bz_source_table": "ut_notification_case_new",
+  "notification_id": "ut_notification_case_new-7",
+  "created_datetime": "2018-06-12 12:21:00",
+  "unit_id": "284",
+  "case_id": "61990",
+  "case_title": "Test new case different unit - notifications",
+  "reporter_user_id": "99",
+  "assignee_user_id": "103"
+}
