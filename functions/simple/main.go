@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -11,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/unee-t/env"
 )
 
 func handler(ctx context.Context, evt json.RawMessage) (string, error) {
@@ -41,7 +44,42 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 		return "", err
 	}
 
+	err = post2Case(cfg, evt)
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf("Response: %s", resp), nil
+}
+
+// For event notifications https://github.com/unee-t/lambda2sns/tree/master/tests/events
+func post2Case(cfg aws.Config, evt json.RawMessage) (err error) {
+	e, err := env.New(cfg)
+	if err != nil {
+		return err
+	}
+	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
+	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
+	log.Infof("Posting to: %s, payload %s, with key %s", casehost, evt, APIAccessToken)
+
+	url := casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
+	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
+	if err != nil {
+		log.WithError(err).Error("constructing POST")
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+APIAccessToken)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.WithError(err).Error("POST request")
+		return err
+	}
+	log.Infof("%s responded with %v", url, res)
+
+	return err
 }
 
 func main() {
