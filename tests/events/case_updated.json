@@ -20,9 +20,9 @@
 	"unit_id": "283",
 	"case_id": "61943",
 	"case_title": "Leaking air con",
-	"user_id": "174"
-	"update_what": "Solution"
-	"case_reporter_user_id": "10"
-	"old_case_assignee_user_id": "12"
+	"user_id": "174",
+	"update_what": "Solution",
+	"case_reporter_user_id": "10",
+	"old_case_assignee_user_id": "12",
 	"new_case_assignee_user_id": "12"
 }
