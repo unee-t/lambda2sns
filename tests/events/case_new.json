@@ -1,11 +1,22 @@
+# The formats are
+#	notification_type -> varchar(255)
+#	bz_source_table -> varchar(240)
+#	notification_id -> varchar(255)
+#	created_datetime -> datetime
+#	unit_id -> smallint(6)
+#	case_id -> mediumint(9)
+#	case_title -> varchar(255)
+#	reporter_user_id -> mediumint(9)
+#	assignee_user_id -> mediumint(9)
+
 {
-  "notification_type": "case_new",
-  "bz_source_table": "ut_notification_case_new",
-  "notification_id": "ut_notification_case_new-7",
-  "created_datetime": "2018-06-12 12:21:00",
-  "unit_id": "284",
-  "case_id": "61990",
-  "case_title": "Test new case different unit - notifications",
-  "reporter_user_id": "99",
-  "assignee_user_id": "103"
+	"notification_type": "case_new",
+	"bz_source_table": "ut_notification_case_new",
+	"notification_id": "ut_notification_case_new-7",
+	"created_datetime": "2018-06-12 12:21:00",
+	"unit_id": "284",
+	"case_id": "61990",
+	"case_title": "Test new case different unit - notifications",
+	"reporter_user_id": "99",
+	"assignee_user_id": "103"
 }

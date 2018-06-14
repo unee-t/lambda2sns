@@ -1,5 +1,19 @@
+# The formats are
+#	notification_type -> varchar(255)
+#	bz_source_table -> varchar(240)
+#	notification_id -> varchar(255)
+#	created_datetime -> datetime
+#	unit_id -> smallint(6)
+#	case_id -> mediumint(9)
+#	case_title -> varchar(255)
+#	invitor_user_id -> mediumint(9)
+#	assignee_user_id -> mediumint(9)
+#	case_reporter_user_id -> mediumint(9)
+#	old_case_assignee_user_id -> mediumint(9)
+#	new_case_assignee_user_id -> mediumint(9)
+
 {
-    "notification_type": "case_assignee_updated",
+	"notification_type": "case_assignee_updated",
     "bz_source_table": "ut_notification_case_assignee",
     "notification_id": "ut_notification_case_assignee-2",
     "created_datetime": "2018-06-12 12:45:22",
@@ -8,4 +22,7 @@
     "case_title": "Toilet bowl is leaking",
     "invitor_user_id": "0",
     "assignee_user_id": "19"
+	"case_reporter_user_id": "10"
+	"old_case_assignee_user_id": "12"
+	"new_case_assignee_user_id": "19"
 }
