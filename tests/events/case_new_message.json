@@ -1,18 +1,3 @@
-# The formats are
-#	notification_type -> varchar(255)
-#	bz_source_table -> varchar(240)
-#	notification_id -> varchar(255)
-#	created_datetime -> datetime
-#	unit_id -> smallint(6)
-#	case_id -> mediumint(9)
-#	case_title -> varchar(255)
-#	created_by_user_id -> mediumint(9)
-#	message_truncated varchar(255)
-#	case_reporter_user_id -> mediumint(9)
-#	old_case_assignee_user_id -> mediumint(9)
-#	new_case_assignee_user_id -> mediumint(9)
-#	current_list_of_invitees -> mediumtext
-
 {
 	"notification_type": "case_user_invited",
 	"bz_source_table": "ut_notification_case_invited",
