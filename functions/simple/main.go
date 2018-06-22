@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -77,8 +78,17 @@ func post2Case(cfg aws.Config, evt json.RawMessage) (err error) {
 		log.WithError(err).Error("POST request")
 		return err
 	}
-	log.Infof("%s responded with %v", url, res)
-
+	defer res.Body.Close()
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.WithError(err).Error("failed to read body")
+		return err
+	}
+	if res.StatusCode == http.StatusOK {
+		log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+	} else {
+		log.Warnf("Response code %d, Body: %s", res.StatusCode, string(resBody))
+	}
 	return err
 }
 
