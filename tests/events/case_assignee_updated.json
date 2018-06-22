@@ -1,11 +1,15 @@
 {
-    "notification_type": "case_assignee_updated",
-    "bz_source_table": "ut_notification_case_assignee",
-    "notification_id": "ut_notification_case_assignee-2",
-    "created_datetime": "2018-06-12 12:45:22",
-    "unit_id": "2",
-    "case_id": "1",
-    "case_title": "Toilet bowl is leaking",
-    "invitor_user_id": "0",
-    "assignee_user_id": "19"
+	"notification_type": "case_assignee_updated",
+	"bz_source_table": "ut_notification_case_assignee",
+	"notification_id": "ut_notification_case_assignee-2",
+	"created_datetime": "2018-06-12 12:45:22",
+	"unit_id": "2",
+	"case_id": "1",
+	"case_title": "Toilet bowl is leaking",
+	"invitor_user_id": "0",
+	"assignee_user_id": "19",
+	"case_reporter_user_id": "10",
+	"old_case_assignee_user_id": "12",
+	"new_case_assignee_user_id": "19",
+	"current_list_of_invitees": "13, 15, 23"
 }
