@@ -1,11 +1,15 @@
 {
-	"notification_type": "case_new",
-	"bz_source_table": "ut_notification_case_new",
-	"notification_id": "ut_notification_case_new-7",
-	"created_datetime": "2018-06-12 12:21:00",
-	"unit_id": "284",
-	"case_id": "61990",
-	"case_title": "Test new case different unit - notifications",
-	"reporter_user_id": "99",
-	"assignee_user_id": "103"
+	"notification_type": "case_new_message",
+	"bz_source_table": "ut_notification_message_new",
+	"notification_id": "ut_notification_message_new-16",
+	"created_datetime": "2018-06-13 06:39:07",
+	"unit_id": "283",
+	"case_id": "61943",
+	"case_title": "Leaking air con",
+	"created_by_user_id": "174",
+	"message_truncated": "lorem ipsum dolerem - the first 255 characters of the message",
+	"case_reporter_user_id": "10",
+	"old_case_assignee_user_id": "12",
+	"new_case_assignee_user_id": "12",
+	"current_list_of_invitees": "13, 15, 23"
 }

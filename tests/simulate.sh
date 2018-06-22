@@ -1,11 +1,11 @@
 #!/bin/sh
-test -f $1 || exit
+test -f "$1" || exit
 
 # Validate JSON event
 jq -e < $1 || exit
 
 # Test locally
-jq --argfile file $1 '.Message = ($file | tojson)' hook.json | curl -H "Content-Type: text/plain" -X POST -d @- http://localhost:3000/api/db-change-message/process
+curl -i -H "Content-Type: application/json" -H "Authorization: Bearer blablabla" -X POST -d @$1 http://localhost:3000/api/db-change-message/process?accessToken=blablabla
 
 # Use https://sh.unee-t.com/ to verify payload
 #jq --argfile file $1 '.Message = ($file | tojson)' hook.json | curl -H "Content-Type: text/plain" -X POST -d @- https://sh.unee-t.com/hook
