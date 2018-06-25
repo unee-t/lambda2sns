@@ -7,9 +7,9 @@
 	"case_id": "1",
 	"case_title": "Toilet bowl is leaking",
 	"invitor_user_id": "0",
-	"assignee_user_id": "19",
+	"assignee_user_id": "21",
 	"case_reporter_user_id": "10",
 	"old_case_assignee_user_id": "12",
-	"new_case_assignee_user_id": "19",
+	"new_case_assignee_user_id": "21",
 	"current_list_of_invitees": "13, 15, 23"
 }
