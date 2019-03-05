@@ -58,3 +58,7 @@ Read: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/AuroraMySQL.Integra
 
 <img src=https://s.natalian.org/2018-05-11/lambda-aurora.png>
 <img src=https://s.natalian.org/2018-05-11/1526021466_2558x1406.png>
+
+## Lambda API returned error: Missing Credentials: Cannot instantiate Lambda Client
+
+You need to **IAM roles to this cluster** https://ap-southeast-1.console.aws.amazon.com/rds/home?region=ap-southeast-1#dbclusters:

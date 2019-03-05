@@ -21,7 +21,7 @@ domain() {
 }
 
 
-for STAGE in dev demo prod
+for STAGE in demo # demo prod
 do
 
 echo $STAGE
@@ -32,6 +32,6 @@ ssm() {
 
 echo mysql -h $(domain $STAGE) -P 3306 -u bugzilla --password=$(ssm MYSQL_PASSWORD)
 
-echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple',  '{ \"operation\" : \"bugzilla $STAGE $(date)\" }' );"  |
+echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple',  '{ \"operation\" : \"bugZILLA $STAGE $(date)\" }' );"  |
 	mysql -h $(domain $STAGE) -P 3306 -u bugzilla --password=$(ssm MYSQL_PASSWORD)
 done
