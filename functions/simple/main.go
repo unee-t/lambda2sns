@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
 	"github.com/unee-t/env"
 )
 
@@ -113,7 +113,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		e.Udomain("auroradb"))
 
 	log.Info("Opening database")
-	DB, err := sqlx.Open("mysql", DSN)
+	DB, err := sql.Open("mysql", DSN)
 	if err != nil {
 		log.WithError(err).Fatal("error opening database")
 		return
