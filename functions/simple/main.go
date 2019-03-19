@@ -146,8 +146,16 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return err
 	}
 
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+	log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+
+	var isCreatedByMe int
+	// https://github.com/unee-t/lambda2sns/issues/9#issuecomment-474238691
+	switch res.StatusCode {
+	case http.StatusOK:
+		isCreatedByMe = 0
+	case http.StatusCreated:
+		isCreatedByMe = 1
+	default:
 		return fmt.Errorf("error from MEFE: %s", string(resBody))
 	}
 
@@ -164,8 +172,9 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	ctx = ctx.WithFields(log.Fields{
-		"id":        parsedResponse.ID,
-		"timestamp": parsedResponse.Timestamp,
+		"id":               parsedResponse.ID,
+		"timestamp":        parsedResponse.Timestamp,
+		"is_created_by_me": isCreatedByMe,
 	})
 
 	ctx.Info("Gonna call ut_creation_success_mefe_unit_id")
@@ -179,9 +188,10 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 SET @unit_creation_request_id = '%s';
 SET @mefe_unit_id = 'unitMongoId (%s)';
 SET @creation_datetime = 'timestamp (%s)';
+SET @is_created_by_me = %d;
 CALL ut_creation_success_mefe_unit_id;
 `
-	filledSQL := fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp)
+	filledSQL := fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
 
 	ctx.Infof("filledSQL: %s", filledSQL)
 
