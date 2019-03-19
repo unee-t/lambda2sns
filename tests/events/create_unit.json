@@ -1,0 +1,13 @@
+{
+  "actionType": "CREATE_UNIT",
+  "creatorId": "R4vBD6BZRCNx8JwnM",
+  "unitCreationRequestId": "whatever",
+  "name": "Unit test 128288",
+  "type": "Villa",
+  "moreInfo": "lasdl",
+  "streetAddress": "asdads",
+  "city": "asdasd",
+  "state": "",
+  "zipCode": "292929",
+  "country": "Singapore"
+}
