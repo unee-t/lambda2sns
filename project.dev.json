@@ -1,9 +1,19 @@
 {
   "name": "alambda",
-  "description": "Lambda to SNS test",
+  "description": "Lambda to SNS",
   "profile": "uneet-dev",
   "memory": 128,
-  "timeout": 5,
+  "timeout": 60,
   "role": "arn:aws:iam::812644853088:role/alambda_lambda_function",
-  "environment": {}
+  "environment": {},
+  "vpc": {
+    "subnets": [
+      "subnet-0ff046ccc4e3b6281",
+      "subnet-0938728dfb344b970",
+      "subnet-0e123bd457c082cff"
+    ],
+    "securityGroups": [
+      "sg-66390301"
+    ]
+  }
 }
