@@ -121,9 +121,9 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
-	log.Infof("Posting to: %s, payload %s, with key %s", casehost, evt, APIAccessToken)
 
 	url := casehost + "/api/process-api-payload?accessToken=" + APIAccessToken
+	log.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
@@ -145,7 +145,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		log.WithError(err).Error("failed to read body")
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 		return fmt.Errorf("error from MEFE: %s", string(resBody))
 	}
@@ -199,9 +200,9 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
-	log.Infof("Posting to: %s, payload %s, with key %s", casehost, evt, APIAccessToken)
 
 	url := casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
+	log.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
