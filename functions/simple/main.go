@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	jsonhandler "github.com/apex/log/handlers/json"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -16,6 +17,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/unee-t/env"
 )
+
+func init() {
+	log.SetHandler(jsonhandler.Default)
+}
 
 func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 
@@ -63,7 +68,21 @@ func post2Case(cfg aws.Config, evt json.RawMessage) (err error) {
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
 	log.Infof("Posting to: %s, payload %s, with key %s", casehost, evt, APIAccessToken)
 
-	url := casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
+	var dat map[string]interface{}
+
+	if err := json.Unmarshal(evt, &dat); err != nil {
+		return err
+	}
+
+	var url string
+	// https://github.com/unee-t/lambda2sns/issues/9
+	_, ok := dat["actionType"].(string)
+	if ok {
+		url = casehost + "/api/process-api-payload?accessToken=" + APIAccessToken
+	} else {
+		url = casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
+	}
+
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
 		log.WithError(err).Error("constructing POST")
@@ -87,7 +106,7 @@ func post2Case(cfg aws.Config, evt json.RawMessage) (err error) {
 	if res.StatusCode == http.StatusOK {
 		log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	} else {
-		log.Warnf("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		log.Errorf("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	}
 	return err
 }
