@@ -31,5 +31,5 @@ ssm() {
 }
 
 echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '$(jq -c . events/create_unit.json)' );"  |
-	mysql -h $(domain $STAGE) -P 3306 -u bugzilla --password=$(ssm MYSQL_PASSWORD)
+	mysql -h $(domain $STAGE) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
 done
