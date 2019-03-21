@@ -78,6 +78,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	type actionType struct {
 		UnitCreationRequestID string `json:"unitCreationRequestId"`
+		UserCreationRequestID string `json:"userCreationRequestId"`
 		Type                  string `json:"actionType"`
 	}
 
@@ -91,13 +92,23 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	ctx := log.WithFields(log.Fields{
 		"type":                  act.Type,
 		"unitCreationRequestId": act.UnitCreationRequestID,
+		"userCreationRequestId": act.UserCreationRequestID,
 	})
 
-	ctx.Info("parsed payload")
-
-	if act.UnitCreationRequestID == "" {
-		ctx.Error("missing unitCreationRequestId")
-		return fmt.Errorf("missing unitCreationRequestId")
+	switch act.Type {
+	case "CREATE_UNIT":
+		if act.UnitCreationRequestID == "" {
+			ctx.Error("missing unitCreationRequestId")
+			return fmt.Errorf("missing unitCreationRequestId")
+		}
+	case "CREATE_USER":
+		if act.UserCreationRequestID == "" {
+			ctx.Error("missing userCreationRequestId")
+			return fmt.Errorf("missing userCreationRequestId")
+		}
+	default:
+		ctx.Errorf("Unknown type: %s", act.Type)
+		return fmt.Errorf("Unknown type: %s", act.Type)
 	}
 
 	// Establish connection to DB
@@ -184,13 +195,30 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return fmt.Errorf("Missing unitMongoId from MEFE response")
 	}
 
-	templateSQL := `
+	var templateSQL string
+	switch act.Type {
+	case "CREATE_UNIT":
+		templateSQL = `
 SET @unit_creation_request_id = '%s';
 SET @mefe_unit_id = 'unitMongoId (%s)';
 SET @creation_datetime = 'timestamp (%s)';
 SET @is_created_by_me = %d;
 CALL ut_creation_success_mefe_unit_id;
+}
 `
+	case "CREATE_USER":
+		templateSQL = `
+SET @user_creation_request_id = '%s';
+SET @mefe_user_id = 'userId (%s)';
+SET @creation_datetime = 'timestamp (%s)';
+SET @is_created_by_me = %d;
+CALL  ut_creation_success_mefe_user_id;
+}
+`
+	default:
+		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
+	}
+
 	filledSQL := fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
 
 	ctx.Infof("filledSQL: %s", filledSQL)
