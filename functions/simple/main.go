@@ -77,8 +77,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	// https://github.com/unee-t/lambda2sns/issues/9
 
 	type actionType struct {
-		UnitCreationRequestID string `json:"unitCreationRequestId"`
-		UserCreationRequestID string `json:"userCreationRequestId"`
+		UnitCreationRequestID int    `json:"unitCreationRequestId"`
+		UserCreationRequestID int    `json:"userCreationRequestId"`
 		Type                  string `json:"actionType"`
 	}
 
@@ -97,12 +97,12 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	switch act.Type {
 	case "CREATE_UNIT":
-		if act.UnitCreationRequestID == "" {
+		if act.UnitCreationRequestID == 0 {
 			ctx.Error("missing unitCreationRequestId")
 			return fmt.Errorf("missing unitCreationRequestId")
 		}
 	case "CREATE_USER":
-		if act.UserCreationRequestID == "" {
+		if act.UserCreationRequestID == 0 {
 			ctx.Error("missing userCreationRequestId")
 			return fmt.Errorf("missing userCreationRequestId")
 		}
@@ -171,7 +171,9 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	type creationResponse struct {
-		ID        string `json:"unitMongoId"`
+		ID        string `json:"id"`
+		UnitID    string `json:"unitMongoId"`
+		UserID    string `json:"userId"`
 		Timestamp string `json:"timestamp"`
 	}
 
@@ -180,6 +182,13 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
 		log.WithError(err).Fatal("unable to unmarshall payload")
 		return err
+	}
+
+	switch act.Type {
+	case "CREATE_UNIT":
+		parsedResponse.ID = parsedResponse.UnitID
+	case "CREATE_USER":
+		parsedResponse.ID = parsedResponse.UserID
 	}
 
 	ctx = ctx.WithFields(log.Fields{
@@ -191,35 +200,31 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	ctx.Info("Gonna call ut_creation_success_mefe_unit_id")
 
 	if parsedResponse.ID == "" {
-		ctx.Error("missing unitMongoId")
-		return fmt.Errorf("Missing unitMongoId from MEFE response")
+		ctx.Error("missing ID")
+		return fmt.Errorf("Missing ID from MEFE response")
 	}
 
-	var templateSQL string
+	var filledSQL string
 	switch act.Type {
 	case "CREATE_UNIT":
-		templateSQL = `
-SET @unit_creation_request_id = '%s';
+		templateSQL := `SET @unit_creation_request_id = '%d';
 SET @mefe_unit_id = 'unitMongoId (%s)';
 SET @creation_datetime = 'timestamp (%s)';
 SET @is_created_by_me = %d;
 CALL ut_creation_success_mefe_unit_id;
-}
-`
+}`
+		filledSQL = fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
 	case "CREATE_USER":
-		templateSQL = `
-SET @user_creation_request_id = '%s';
+		templateSQL := `SET @user_creation_request_id = '%d';
 SET @mefe_user_id = 'userId (%s)';
 SET @creation_datetime = 'timestamp (%s)';
 SET @is_created_by_me = %d;
 CALL  ut_creation_success_mefe_user_id;
-}
-`
+}`
+		filledSQL = fmt.Sprintf(templateSQL, act.UserCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
-
-	filledSQL := fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
 
 	ctx.Infof("filledSQL: %s", filledSQL)
 

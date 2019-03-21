@@ -1,9 +1,9 @@
 {
+  "lastName": "Derspson",
+  "creatorId": "YYeAutqzDY3MeqbNC",
+  "firstName": "Derp",
   "actionType": "CREATE_USER",
-  "creatorId": "R4vBD6BZRCNx8JwnM",
-  "emailAddress": "naor0example.com",
-  "firstName": "Naor",
-  "lastName": "Biton",
-  "phoneNumber": "28282828",
+  "phoneNumber": null,
+  "emailAddress": "derp@derp.com",
   "userCreationRequestId": 20
 }
