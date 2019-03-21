@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/apex/log"
 	jsonhandler "github.com/apex/log/handlers/json"
@@ -171,10 +172,10 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	type creationResponse struct {
-		ID        string `json:"id"`
-		UnitID    string `json:"unitMongoId"`
-		UserID    string `json:"userId"`
-		Timestamp string `json:"timestamp"`
+		ID        string    `json:"id"`
+		UnitID    string    `json:"unitMongoId"`
+		UserID    string    `json:"userId"`
+		Timestamp time.Time `json:"timestamp"`
 	}
 
 	var parsedResponse creationResponse
@@ -197,41 +198,44 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"is_created_by_me": isCreatedByMe,
 	})
 
-	ctx.Info("Gonna call ut_creation_success_mefe_unit_id")
-
 	if parsedResponse.ID == "" {
 		ctx.Error("missing ID")
 		return fmt.Errorf("Missing ID from MEFE response")
 	}
 
+	// https://dev.mysql.com/doc/refman/8.0/en/datetime.html
+	sqlTimeLayout := "2006-01-02 15:04:05"
+
 	var filledSQL string
 	switch act.Type {
 	case "CREATE_UNIT":
-		templateSQL := `SET @unit_creation_request_id = '%d';
-SET @mefe_unit_id = 'unitMongoId (%s)';
-SET @creation_datetime = 'timestamp (%s)';
+		templateSQL := `SET @unit_creation_request_id = %d;
+SET @mefe_unit_id = '%s';
+SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
-CALL ut_creation_success_mefe_unit_id;
-}`
-		filledSQL = fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
+CALL ut_creation_success_mefe_unit_id;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp.Format(sqlTimeLayout), isCreatedByMe)
 	case "CREATE_USER":
-		templateSQL := `SET @user_creation_request_id = '%d';
-SET @mefe_user_id = 'userId (%s)';
-SET @creation_datetime = 'timestamp (%s)';
+		templateSQL := `SET @user_creation_request_id = %d;
+SET @mefe_user_id = '%s';
+SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
-CALL  ut_creation_success_mefe_user_id;
-}`
-		filledSQL = fmt.Sprintf(templateSQL, act.UserCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp, isCreatedByMe)
+CALL ut_creation_success_mefe_user_id;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UserCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp.Format(sqlTimeLayout), isCreatedByMe)
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
 
-	ctx.Infof("filledSQL: %s", filledSQL)
+	// for _, v := range strings.Split(filledSQL, "\n") {
+	// 	ctx.Infof("DB.Exec line: %s", v)
+	// }
 
+	ctx.Infof("DB.Exec filledSQL: %s", filledSQL)
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
 		ctx.WithError(err).Error("running sql failed")
 	}
+
 	return err
 }
 
