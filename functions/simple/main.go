@@ -21,8 +21,22 @@ import (
 	"github.com/unee-t/env"
 )
 
+var account *string
+
 func init() {
 	log.SetHandler(jsonhandler.Default)
+}
+
+func reportError(snssvc *sns.SNS, message string) error {
+	snsreq := snssvc.PublishRequest(&sns.PublishInput{
+		Message:  aws.String(message),
+		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:process-api-payload", aws.StringValue(account))),
+	})
+	_, err := snsreq.Send()
+	if err != nil {
+		log.Infof("Reported: %s", message)
+	}
+	return err
 }
 
 func handler(ctx context.Context, evt json.RawMessage) (string, error) {
@@ -40,6 +54,8 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	account = result.Account
 
 	log.Infof("JSON payload: %s", evt)
 	snssvc := sns.New(cfg)
@@ -63,11 +79,15 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	if actionType {
 		err = actionTypeDB(cfg, evt)
 		if err != nil {
+			log.WithError(err).Error("actionTypeDB")
+			err = reportError(snssvc, err.Error())
 			return "", err
 		}
 	} else {
 		err = postChangeMessage(cfg, evt)
 		if err != nil {
+			log.WithError(err).Error("postChangeMessage")
+			err = reportError(snssvc, err.Error())
 			return "", err
 		}
 	}
@@ -168,7 +188,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	case http.StatusCreated:
 		isCreatedByMe = 1
 	default:
-		return fmt.Errorf("error from MEFE: %s", string(resBody))
+		return fmt.Errorf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
 	}
 
 	type creationResponse struct {
