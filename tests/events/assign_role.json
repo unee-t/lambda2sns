@@ -1,0 +1,19 @@
+{
+  "unitId": "00V9XSzfATFa1DuT1",
+  "roleType": "Tenant",
+  "isVisible": "false",
+  "actionType": "ASSIGN_ROLE",
+  "isOccupant": "true",
+  "addedUserId": "RbpcfLvTg26P8phEA",
+  "roleVisibility": {
+    "Agent": "true",
+    "Tenant": "true",
+    "Occupant": "true",
+    "Contractor": "true",
+    "Owner/Landlord": "true",
+    "Management Company": "true"
+  },
+  "requestorUserId": "YYeAutqzDY3MeqbNC",
+  "isDefaultInvited": "false",
+  "mefeAPIRequestId": 1
+}

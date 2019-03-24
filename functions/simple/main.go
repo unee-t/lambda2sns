@@ -100,6 +100,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	type actionType struct {
 		UnitCreationRequestID int    `json:"unitCreationRequestId"`
 		UserCreationRequestID int    `json:"userCreationRequestId"`
+		MEFIRequestId         int    `json:"mefeAPIRequestId"`
 		Type                  string `json:"actionType"`
 	}
 
@@ -126,6 +127,11 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		if act.UserCreationRequestID == 0 {
 			ctx.Error("missing userCreationRequestId")
 			return fmt.Errorf("missing userCreationRequestId")
+		}
+	case "ASSIGN_ROLE":
+		if act.MEFIRequestId == 0 {
+			ctx.Error("missing mefeAPIRequestId")
+			return fmt.Errorf("missing mefeAPIRequestId")
 		}
 	default:
 		ctx.Errorf("Unknown type: %s", act.Type)
@@ -218,9 +224,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"is_created_by_me": isCreatedByMe,
 	})
 
-	if parsedResponse.ID == "" {
-		ctx.Error("missing ID")
-		return fmt.Errorf("Missing ID from MEFE response")
+	if parsedResponse.ID == "" && act.Type != "ASSIGN_ROLE" {
+		ctx.Warn("missing ID")
 	}
 
 	// https://dev.mysql.com/doc/refman/8.0/en/datetime.html
@@ -242,20 +247,19 @@ SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
 CALL ut_creation_success_mefe_user_id;`
 		filledSQL = fmt.Sprintf(templateSQL, act.UserCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp.Format(sqlTimeLayout), isCreatedByMe)
+	case "ASSIGN_ROLE":
+		templateSQL := `SET @mefe_api_request_id = %d;
+SET @creation_datetime = '%s';
+CALL ut_creation_success_add_user_to_role_in_unit_with_visibility;`
+		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestId, parsedResponse.Timestamp.Format(sqlTimeLayout))
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
-
-	// for _, v := range strings.Split(filledSQL, "\n") {
-	// 	ctx.Infof("DB.Exec line: %s", v)
-	// }
-
 	ctx.Infof("DB.Exec filledSQL: %s", filledSQL)
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
 		ctx.WithError(err).Error("running sql failed")
 	}
-
 	return err
 }
 
