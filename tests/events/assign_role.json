@@ -1,19 +1,19 @@
 {
-  "unitId": "00V9XSzfATFa1DuT1",
+  "unitId": "jAPsg5sZBjSDT9QSD",
   "roleType": "Tenant",
-  "isVisible": "false",
+  "isVisible": 1,
   "actionType": "ASSIGN_ROLE",
-  "isOccupant": "true",
-  "addedUserId": "RbpcfLvTg26P8phEA",
+  "isOccupant": 1,
+  "addedUserId": "wQY75SMMHbMv5jnhe",
   "roleVisibility": {
-    "Agent": "true",
-    "Tenant": "true",
-    "Occupant": "true",
-    "Contractor": "true",
-    "Owner/Landlord": "true",
-    "Management Company": "true"
+    "Agent": 1,
+    "Tenant": 1,
+    "Occupant": 1,
+    "Contractor": 1,
+    "Owner/Landlord": 1,
+    "Management Company": 1
   },
   "requestorUserId": "YYeAutqzDY3MeqbNC",
-  "isDefaultInvited": "false",
+  "isDefaultInvited": 0,
   "mefeAPIRequestId": 1
 }

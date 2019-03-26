@@ -100,7 +100,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	type actionType struct {
 		UnitCreationRequestID int    `json:"unitCreationRequestId"`
 		UserCreationRequestID int    `json:"userCreationRequestId"`
-		MEFIRequestId         int    `json:"mefeAPIRequestId"`
+		MEFIRequestID         int    `json:"mefeAPIRequestId"`
+		UpdateUserRequestID   int    `json:"updateUserRequestId"`
 		Type                  string `json:"actionType"`
 	}
 
@@ -115,6 +116,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"type":                  act.Type,
 		"unitCreationRequestId": act.UnitCreationRequestID,
 		"userCreationRequestId": act.UserCreationRequestID,
+		"updateUserRequestId":   act.UpdateUserRequestID,
 	})
 
 	switch act.Type {
@@ -123,13 +125,18 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 			ctx.Error("missing unitCreationRequestId")
 			return fmt.Errorf("missing unitCreationRequestId")
 		}
+	case "EDIT_USER":
+		if act.UpdateUserRequestID == 0 {
+			ctx.Error("missing updateUserRequestId")
+			return fmt.Errorf("missing updateUserRequestId")
+		}
 	case "CREATE_USER":
 		if act.UserCreationRequestID == 0 {
 			ctx.Error("missing userCreationRequestId")
 			return fmt.Errorf("missing userCreationRequestId")
 		}
 	case "ASSIGN_ROLE":
-		if act.MEFIRequestId == 0 {
+		if act.MEFIRequestID == 0 {
 			ctx.Error("missing mefeAPIRequestId")
 			return fmt.Errorf("missing mefeAPIRequestId")
 		}
@@ -224,10 +231,6 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"is_created_by_me": isCreatedByMe,
 	})
 
-	if parsedResponse.ID == "" && act.Type != "ASSIGN_ROLE" {
-		ctx.Warn("missing ID")
-	}
-
 	// https://dev.mysql.com/doc/refman/8.0/en/datetime.html
 	sqlTimeLayout := "2006-01-02 15:04:05"
 
@@ -251,7 +254,12 @@ CALL ut_creation_success_mefe_user_id;`
 		templateSQL := `SET @mefe_api_request_id = %d;
 SET @creation_datetime = '%s';
 CALL ut_creation_success_add_user_to_role_in_unit_with_visibility;`
-		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestId, parsedResponse.Timestamp.Format(sqlTimeLayout))
+		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+	case "EDIT_UDER":
+		templateSQL := `SET @update_user_request_id = %d;
+SET @updated_datetime = '%s';
+CALL ut_update_success_mefe_user;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
