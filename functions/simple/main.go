@@ -255,7 +255,7 @@ CALL ut_creation_success_mefe_user_id;`
 SET @creation_datetime = '%s';
 CALL ut_creation_success_add_user_to_role_in_unit_with_visibility;`
 		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
-	case "EDIT_UDER":
+	case "EDIT_USER":
 		templateSQL := `SET @update_user_request_id = %d;
 SET @updated_datetime = '%s';
 CALL ut_update_success_mefe_user;`
