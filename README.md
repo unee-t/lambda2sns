@@ -19,6 +19,10 @@ Then you should get an email of the JSON payload.
 
 	make
 
+# View logs
+
+[Last five minutes](https://ap-southeast-1.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-1#logEventViewer:group=/aws/lambda/alambda_simple;start=PT5M)
+
 # Setup
 
 ## lambda role
