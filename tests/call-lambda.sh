@@ -29,7 +29,7 @@ domain() {
 }
 
 
-for STAGE in dev # demo prod
+for STAGE in dev demo # prod
 do
 
 echo $STAGE
@@ -38,6 +38,8 @@ ssm() {
 	aws --profile uneet-$STAGE ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text
 }
 
-echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '$(jq -c . $json)' );" |
-	mysql -h $(domain $STAGE) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
+#echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '$(jq -c . $json)' );" |
+# "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '{ \"operation\" : \"$STAGE $(date)\" }' );" |
+echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '' );" |
+mysql -h $(domain $STAGE) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
 done

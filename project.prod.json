@@ -2,7 +2,17 @@
   "name": "alambda",
   "description": "Lambda to SNS test",
   "profile": "uneet-prod",
+  "timeout": 60,
   "region": "ap-southeast-1",
   "role": "arn:aws:iam::192458993663:role/alambda_lambda_function",
-  "environment": {}
+  "vpc": {
+    "subnets": [
+      "subnet-0df289b6d96447a84",
+      "subnet-0e41c71ad02ee7e99",
+      "subnet-01cb9ee064743ac56"
+    ],
+    "securityGroups": [
+      "sg-9f5b5ef8"
+    ]
+  }
 }

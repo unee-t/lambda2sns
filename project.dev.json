@@ -2,7 +2,6 @@
   "name": "alambda",
   "description": "Lambda to SNS",
   "profile": "uneet-dev",
-  "memory": 128,
   "timeout": 60,
   "role": "arn:aws:iam::812644853088:role/alambda_lambda_function",
   "environment": {},
