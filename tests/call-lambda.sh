@@ -29,7 +29,7 @@ domain() {
 }
 
 
-for STAGE in dev demo # prod
+for STAGE in dev # prod
 do
 
 echo $STAGE

@@ -1,6 +1,6 @@
 {
   "name": "alambda",
-  "description": "Lambda to SNS test",
+  "description": "Lambda to SNS",
   "profile": "uneet-demo",
   "timeout": 60,
   "region": "ap-southeast-1",

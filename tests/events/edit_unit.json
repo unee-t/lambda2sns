@@ -1,0 +1,14 @@
+{
+  "actionType": "EDIT_UNIT",
+  "requestorUserId": "R4vBD6BZRCNx8JwnM",
+  "unitId": "FuFMO1O1ISXPmwtMB",
+  "creatorId": "R4vBD6BZRCNx8JwnM",
+  "type": "Hotel",
+  "name": "Unit test yyyyyy",
+  "moreInfo": "More info",
+  "streetAddress": "123 asdjdsj",
+  "city": "Singapore",
+  "state": "---",
+  "zipCode": "11111111",
+  "country": "Singapore"
+}

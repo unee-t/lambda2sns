@@ -102,6 +102,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		UserCreationRequestID int    `json:"userCreationRequestId"`
 		MEFIRequestID         int    `json:"mefeAPIRequestId"`
 		UpdateUserRequestID   int    `json:"updateUserRequestId"`
+		UpdateUnitRequestID   int    `json:"updateUnitRequestId"`
 		Type                  string `json:"actionType"`
 	}
 
@@ -117,6 +118,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"unitCreationRequestId": act.UnitCreationRequestID,
 		"userCreationRequestId": act.UserCreationRequestID,
 		"updateUserRequestId":   act.UpdateUserRequestID,
+		"updateUnitRequestId":   act.UpdateUnitRequestID,
 	})
 
 	switch act.Type {
@@ -129,6 +131,11 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		if act.UpdateUserRequestID == 0 {
 			ctx.Error("missing updateUserRequestId")
 			return fmt.Errorf("missing updateUserRequestId")
+		}
+	case "EDIT_UNIT":
+		if act.UpdateUnitRequestID == 0 {
+			ctx.Error("missing updateUnitRequestId")
+			return fmt.Errorf("missing updateUnitRequestId")
 		}
 	case "CREATE_USER":
 		if act.UserCreationRequestID == 0 {
@@ -260,6 +267,12 @@ CALL ut_creation_success_add_user_to_role_in_unit_with_visibility;`
 SET @updated_datetime = '%s';
 CALL ut_update_success_mefe_user;`
 		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+	case "EDIT_UNIT":
+		templateSQL := `SET @update_unit_request_id = %d;
+SET @updated_datetime = '%s';
+CALL ut_update_success_mefe_unit;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
