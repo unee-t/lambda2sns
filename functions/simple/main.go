@@ -98,12 +98,13 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	// https://github.com/unee-t/lambda2sns/issues/9
 
 	type actionType struct {
-		UnitCreationRequestID int    `json:"unitCreationRequestId"`
-		UserCreationRequestID int    `json:"userCreationRequestId"`
-		MEFIRequestID         int    `json:"mefeAPIRequestId"`
-		UpdateUserRequestID   int    `json:"updateUserRequestId"`
-		UpdateUnitRequestID   int    `json:"updateUnitRequestId"`
-		Type                  string `json:"actionType"`
+		UnitCreationRequestID       int    `json:"unitCreationRequestId"`
+		UserCreationRequestID       int    `json:"userCreationRequestId"`
+		MEFIRequestID               int    `json:"mefeAPIRequestId"`
+		UpdateUserRequestID         int    `json:"updateUserRequestId"`
+		UpdateUnitRequestID         int    `json:"updateUnitRequestId"`
+		RemoveUserFromUnitRequestID int    `json:"removeUserFromUnitRequestId"`
+		Type                        string `json:"actionType"`
 	}
 
 	var act actionType
@@ -114,11 +115,12 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	ctx := log.WithFields(log.Fields{
-		"type":                  act.Type,
-		"unitCreationRequestId": act.UnitCreationRequestID,
-		"userCreationRequestId": act.UserCreationRequestID,
-		"updateUserRequestId":   act.UpdateUserRequestID,
-		"updateUnitRequestId":   act.UpdateUnitRequestID,
+		"type":                        act.Type,
+		"unitCreationRequestId":       act.UnitCreationRequestID,
+		"userCreationRequestId":       act.UserCreationRequestID,
+		"updateUserRequestId":         act.UpdateUserRequestID,
+		"updateUnitRequestId":         act.UpdateUnitRequestID,
+		"removeUserFromUnitRequestId": act.RemoveUserFromUnitRequestID,
 	})
 
 	switch act.Type {
@@ -146,6 +148,11 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		if act.MEFIRequestID == 0 {
 			ctx.Error("missing mefeAPIRequestId")
 			return fmt.Errorf("missing mefeAPIRequestId")
+		}
+	case "DEASSIGN_ROLE":
+		if act.RemoveUserFromUnitRequestID == 0 {
+			ctx.Error("missing removeUserFromUnitRequestId")
+			return fmt.Errorf("missing removeUserFromUnitRequestId")
 		}
 	default:
 		ctx.Errorf("Unknown type: %s", act.Type)
@@ -272,7 +279,11 @@ CALL ut_update_success_mefe_user;`
 SET @updated_datetime = '%s';
 CALL ut_update_success_mefe_unit;`
 		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
-
+	case "DEASSIGN_ROLE":
+		templateSQL := `SET @remove_user_from_unit_request_id = %d;
+SET @updated_datetime = '%s';
+CALL ut_update_success_remove_user_from_unit;`
+		filledSQL = fmt.Sprintf(templateSQL, act.RemoveUserFromUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
