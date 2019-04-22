@@ -1,15 +1,15 @@
 {
-  "updateUnitRequestId": 1,
-  "actionType": "EDIT_UNIT",
-  "requestorUserId": "R4vBD6BZRCNx8JwnM",
-  "unitId": "FuFMO1O1ISXPmwtMB",
-  "creatorId": "R4vBD6BZRCNx8JwnM",
-  "type": "Hotel",
-  "name": "Unit test yyyyyy",
-  "moreInfo": "More info",
-  "streetAddress": "123 asdjdsj",
   "city": "Singapore",
-  "state": "---",
-  "zipCode": "11111111",
-  "country": "Singapore"
+  "name": "{{name}}",
+  "type": "Condominium",
+  "state": null,
+  "unitId": "EOlSJMSdx8Hfx5D6Y",
+  "country": "Singapore",
+  "zipCode": "138642",
+  "moreInfo": null,
+  "creatorId": "YYeAutqzDY3MeqbNC",
+  "actionType": "EDIT_UNIT",
+  "streetAddress": "7 One North Gate Way",
+  "requestorUserId": "MEFE API - Create Unit",
+  "updateUnitRequestId": 1054
 }

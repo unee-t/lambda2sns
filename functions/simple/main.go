@@ -13,6 +13,7 @@ import (
 	"github.com/apex/log"
 	jsonhandler "github.com/apex/log/handlers/json"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -22,6 +23,7 @@ import (
 )
 
 var account *string
+var logWithRequestID *log.Entry
 
 func init() {
 	log.SetHandler(jsonhandler.Default)
@@ -34,7 +36,7 @@ func reportError(snssvc *sns.SNS, message string) error {
 	})
 	_, err := snsreq.Send()
 	if err != nil {
-		log.Infof("Reported: %s", message)
+		logWithRequestID.Infof("Reported: %s", message)
 	}
 	return err
 }
@@ -44,6 +46,13 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return "", err
+	}
+
+	ctxObj, ok := lambdacontext.FromContext(ctx)
+	if ok {
+		logWithRequestID = log.WithFields(log.Fields{
+			"requestID": ctxObj.AwsRequestID,
+		})
 	}
 
 	stssvc := sts.New(cfg)
@@ -57,7 +66,7 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 
 	account = result.Account
 
-	log.Infof("JSON payload: %s", evt)
+	logWithRequestID.Infof("JSON payload: %s", evt)
 	snssvc := sns.New(cfg)
 	snsreq := snssvc.PublishRequest(&sns.PublishInput{
 		Message:  aws.String(fmt.Sprintf("%s", evt)),
@@ -79,14 +88,14 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	if actionType {
 		err = actionTypeDB(cfg, evt)
 		if err != nil {
-			log.WithError(err).Error("actionTypeDB")
+			logWithRequestID.WithError(err).Error("actionTypeDB")
 			err = reportError(snssvc, err.Error())
 			return "", err
 		}
 	} else {
 		err = postChangeMessage(cfg, evt)
 		if err != nil {
-			log.WithError(err).Error("postChangeMessage")
+			logWithRequestID.WithError(err).Error("postChangeMessage")
 			err = reportError(snssvc, err.Error())
 			return "", err
 		}
@@ -110,11 +119,11 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	var act actionType
 
 	if err := json.Unmarshal(evt, &act); err != nil {
-		log.WithError(err).Fatal("unable to unmarshall payload")
+		logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
 		return err
 	}
 
-	ctx := log.WithFields(log.Fields{
+	ctx := logWithRequestID.WithFields(log.Fields{
 		"type":                        act.Type,
 		"unitCreationRequestId":       act.UnitCreationRequestID,
 		"userCreationRequestId":       act.UserCreationRequestID,
@@ -171,22 +180,26 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		e.GetSecret("LAMBDA_INVOKER_PASSWORD"),
 		e.Udomain("auroradb"))
 
-	log.Info("Opening database")
 	DB, err := sql.Open("mysql", DSN)
 	if err != nil {
-		log.WithError(err).Fatal("error opening database")
+		logWithRequestID.WithError(err).Fatal("error opening database")
 		return
 	}
 
 	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
 
+	if APIAccessToken == "" {
+		log.Error("missing API_ACCESS_TOKEN credential")
+		return fmt.Errorf("missing API_ACCESS_TOKEN credential")
+	}
+
 	url := casehost + "/api/process-api-payload?accessToken=" + APIAccessToken
-	log.Infof("Posting to: %s, payload %s", url, evt)
+	logWithRequestID.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
-		log.WithError(err).Error("constructing POST")
+		logWithRequestID.WithError(err).Error("constructing POST")
 		return err
 	}
 
@@ -195,17 +208,17 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.WithError(err).Error("POST request")
+		logWithRequestID.WithError(err).Error("POST request")
 		return err
 	}
 	defer res.Body.Close()
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.WithError(err).Error("failed to read body")
+		logWithRequestID.WithError(err).Error("failed to read body")
 		return err
 	}
 
-	log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+	logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 
 	var isCreatedByMe int
 	// https://github.com/unee-t/lambda2sns/issues/9#issuecomment-474238691
@@ -228,7 +241,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	var parsedResponse creationResponse
 
 	if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
-		log.WithError(err).Fatal("unable to unmarshall payload")
+		logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
 		return err
 	}
 
@@ -305,11 +318,11 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
 
 	url := casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
-	log.Infof("Posting to: %s, payload %s", url, evt)
+	logWithRequestID.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
-		log.WithError(err).Error("constructing POST")
+		logWithRequestID.WithError(err).Error("constructing POST")
 		return err
 	}
 
@@ -318,19 +331,19 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.WithError(err).Error("POST request")
+		logWithRequestID.WithError(err).Error("POST request")
 		return err
 	}
 	defer res.Body.Close()
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.WithError(err).Error("failed to read body")
+		logWithRequestID.WithError(err).Error("failed to read body")
 		return err
 	}
 	if res.StatusCode == http.StatusOK {
-		log.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	} else {
-		log.Errorf("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		logWithRequestID.Errorf("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	}
 	return err
 }
