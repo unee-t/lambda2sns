@@ -25,20 +25,9 @@ import (
 var account *string
 var logWithRequestID *log.Entry
 
-func init() {
+func main() {
 	log.SetHandler(jsonhandler.Default)
-}
-
-func reportError(snssvc *sns.SNS, message string) error {
-	snsreq := snssvc.PublishRequest(&sns.PublishInput{
-		Message:  aws.String(message),
-		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:process-api-payload", aws.StringValue(account))),
-	})
-	_, err := snsreq.Send()
-	if err != nil {
-		logWithRequestID.Infof("Reported: %s", message)
-	}
-	return err
+	lambda.Start(handler)
 }
 
 func handler(ctx context.Context, evt json.RawMessage) (string, error) {
@@ -96,13 +85,27 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 		err = postChangeMessage(cfg, evt)
 		if err != nil {
 			logWithRequestID.WithError(err).Error("postChangeMessage")
-			err = reportError(snssvc, err.Error())
+			// Too much noise
+			// err = reportError(snssvc, err.Error())
 			return "", err
 		}
 	}
 
 	return fmt.Sprintf("Response: %s", resp), nil
 }
+
+func reportError(snssvc *sns.SNS, message string) error {
+	snsreq := snssvc.PublishRequest(&sns.PublishInput{
+		Message:  aws.String(message),
+		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:process-api-payload", aws.StringValue(account))),
+	})
+	_, err := snsreq.Send()
+	if err != nil {
+		logWithRequestID.Infof("Reported: %s", message)
+	}
+	return err
+}
+
 func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	// https://github.com/unee-t/lambda2sns/issues/9
 
@@ -219,6 +222,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+	var errorMessage string
 
 	var isCreatedByMe int
 	// https://github.com/unee-t/lambda2sns/issues/9#issuecomment-474238691
@@ -228,7 +232,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	case http.StatusCreated:
 		isCreatedByMe = 1
 	default:
-		return fmt.Errorf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
+		// return fmt.Errorf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
+		errorMessage = fmt.Sprintf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
 	}
 
 	type creationResponse struct {
@@ -240,22 +245,27 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	var parsedResponse creationResponse
 
-	if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
-		logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
-		return err
-	}
+	parsedResponse.ID = fmt.Sprintf("error-%s-%d", act.Type, time.Now().UnixNano())
 
-	switch act.Type {
-	case "CREATE_UNIT":
-		parsedResponse.ID = parsedResponse.UnitID
-	case "CREATE_USER":
-		parsedResponse.ID = parsedResponse.UserID
+	if errorMessage == "" { // only parse payload if there is no error
+		if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
+			logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
+			return err
+		}
+
+		switch act.Type {
+		case "CREATE_UNIT":
+			parsedResponse.ID = parsedResponse.UnitID
+		case "CREATE_USER":
+			parsedResponse.ID = parsedResponse.UserID
+		}
 	}
 
 	ctx = ctx.WithFields(log.Fields{
 		"id":               parsedResponse.ID,
 		"timestamp":        parsedResponse.Timestamp,
 		"is_created_by_me": isCreatedByMe,
+		"errorMessage":     errorMessage,
 	})
 
 	// https://dev.mysql.com/doc/refman/8.0/en/datetime.html
@@ -268,35 +278,51 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 SET @mefe_unit_id = '%s';
 SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
-CALL ut_creation_success_mefe_unit_id;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UnitCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp.Format(sqlTimeLayout), isCreatedByMe)
+SET @mefe_api_error_message = '%s';
+CALL ut_creation_unit_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL,
+			act.UnitCreationRequestID,
+			parsedResponse.ID,
+			parsedResponse.Timestamp.Format(sqlTimeLayout),
+			isCreatedByMe,
+			errorMessage)
 	case "CREATE_USER":
 		templateSQL := `SET @user_creation_request_id = %d;
 SET @mefe_user_id = '%s';
 SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
-CALL ut_creation_success_mefe_user_id;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UserCreationRequestID, parsedResponse.ID, parsedResponse.Timestamp.Format(sqlTimeLayout), isCreatedByMe)
+SET @mefe_api_error_message = '%s';
+CALL ut_creation_user_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL,
+			act.UserCreationRequestID,
+			parsedResponse.ID,
+			parsedResponse.Timestamp.Format(sqlTimeLayout),
+			isCreatedByMe,
+			errorMessage)
 	case "ASSIGN_ROLE":
 		templateSQL := `SET @mefe_api_request_id = %d;
 SET @creation_datetime = '%s';
-CALL ut_creation_success_add_user_to_role_in_unit_with_visibility;`
-		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+SET @mefe_api_error_message = '%s';
+CALL ut_creation_user_role_association_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
 	case "EDIT_USER":
 		templateSQL := `SET @update_user_request_id = %d;
 SET @updated_datetime = '%s';
-CALL ut_update_success_mefe_user;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+SET @mefe_api_error_message = '%s';
+CALL ut_update_user_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
 	case "EDIT_UNIT":
 		templateSQL := `SET @update_unit_request_id = %d;
 SET @updated_datetime = '%s';
-CALL ut_update_success_mefe_unit;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+SET @mefe_api_error_message = '%s';
+CALL ut_update_unit_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
 	case "DEASSIGN_ROLE":
 		templateSQL := `SET @remove_user_from_unit_request_id = %d;
 SET @updated_datetime = '%s';
-CALL ut_update_success_remove_user_from_unit;`
-		filledSQL = fmt.Sprintf(templateSQL, act.RemoveUserFromUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout))
+SET @mefe_api_error_message = '%s';
+CALL ut_remove_user_role_association_mefe_api_reply;`
+		filledSQL = fmt.Sprintf(templateSQL, act.RemoveUserFromUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
@@ -344,10 +370,7 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 		logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	} else {
 		logWithRequestID.Errorf("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		return fmt.Errorf("/api/db-change-message/process response code %d, Request: %s Response: %s", res.StatusCode, evt, string(resBody))
 	}
 	return err
-}
-
-func main() {
-	lambda.Start(handler)
 }
