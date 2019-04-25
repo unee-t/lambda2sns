@@ -87,7 +87,7 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 			logWithRequestID.WithError(err).Error("postChangeMessage")
 			// Too much noise
 			// err = reportError(snssvc, err.Error())
-			return "", err
+			return "", nil // set to nil since we don't want lambda to retry on this type of failure
 		}
 	}
 
@@ -198,7 +198,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	}
 
 	url := casehost + "/api/process-api-payload?accessToken=" + APIAccessToken
-	logWithRequestID.Infof("Posting to: %s, payload %s", url, evt)
+	logWithRequestID.Debugf("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
