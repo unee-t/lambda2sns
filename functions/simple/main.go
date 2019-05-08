@@ -233,14 +233,15 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		isCreatedByMe = 1
 	default:
 		// return fmt.Errorf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
-		errorMessage = fmt.Sprintf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
+		errorMessage = escape(fmt.Sprintf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt)))
 	}
 
 	type creationResponse struct {
-		ID        string    `json:"id"`
-		UnitID    string    `json:"unitMongoId"`
-		UserID    string    `json:"userId"`
-		Timestamp time.Time `json:"timestamp"`
+		ID         string    `json:"id"`
+		UnitID     string    `json:"unitMongoId"`
+		UserID     string    `json:"userId"`
+		Timestamp  time.Time `json:"timestamp"`
+		MefeAPIkey string    `json:"mefeApiKey"`
 	}
 
 	var parsedResponse creationResponse
@@ -292,13 +293,16 @@ SET @mefe_user_id = '%s';
 SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
 SET @mefe_api_error_message = '%s';
+SET @ut_map_external_source_users = '%s';
 CALL ut_creation_user_mefe_api_reply;`
 		filledSQL = fmt.Sprintf(templateSQL,
 			act.UserCreationRequestID,
 			parsedResponse.ID,
 			parsedResponse.Timestamp.Format(sqlTimeLayout),
 			isCreatedByMe,
-			errorMessage)
+			errorMessage,
+			parsedResponse.MefeAPIkey,
+		)
 	case "ASSIGN_ROLE":
 		templateSQL := `SET @mefe_api_request_id = %d;
 SET @creation_datetime = '%s';
@@ -373,4 +377,54 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 		return fmt.Errorf("/api/db-change-message/process response code %d, Request: %s Response: %s", res.StatusCode, evt, string(resBody))
 	}
 	return err
+}
+
+// from https://github.com/golang/go/issues/18478#issuecomment-357285669
+func escape(source string) string {
+	var j int = 0
+	if len(source) == 0 {
+		return ""
+	}
+	tempStr := source[:]
+	desc := make([]byte, len(tempStr)*2)
+	for i := 0; i < len(tempStr); i++ {
+		flag := false
+		var escape byte
+		switch tempStr[i] {
+		case '\r':
+			flag = true
+			escape = '\r'
+			break
+		case '\n':
+			flag = true
+			escape = '\n'
+			break
+		case '\\':
+			flag = true
+			escape = '\\'
+			break
+		case '\'':
+			flag = true
+			escape = '\''
+			break
+		case '"':
+			flag = true
+			escape = '"'
+			break
+		case '\032':
+			flag = true
+			escape = 'Z'
+			break
+		default:
+		}
+		if flag {
+			desc[j] = '\\'
+			desc[j+1] = escape
+			j = j + 2
+		} else {
+			desc[j] = tempStr[i]
+			j = j + 1
+		}
+	}
+	return string(desc[0:j])
 }
