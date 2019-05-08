@@ -293,7 +293,7 @@ SET @mefe_user_id = '%s';
 SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
 SET @mefe_api_error_message = '%s';
-SET @ut_map_external_source_users = '%s';
+SET @mefe_user_api_key = '%s';
 CALL ut_creation_user_mefe_api_reply;`
 		filledSQL = fmt.Sprintf(templateSQL,
 			act.UserCreationRequestID,
