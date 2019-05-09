@@ -178,7 +178,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return err
 	}
 
-	DSN := fmt.Sprintf("%s:%s@tcp(%s:3306)/unee_t_enterprise?multiStatements=true&sql_mode=TRADITIONAL&timeout=5s",
+	DSN := fmt.Sprintf("%s:%s@tcp(%s:3306)/unee_t_enterprise?multiStatements=true&sql_mode=TRADITIONAL&timeout=5s&collation=utf8mb4_unicode_520_ci",
 		e.GetSecret("LAMBDA_INVOKER_USERNAME"),
 		e.GetSecret("LAMBDA_INVOKER_PASSWORD"),
 		e.Udomain("auroradb"))
