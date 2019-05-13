@@ -55,7 +55,6 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 
 	account = result.Account
 
-	logWithRequestID.Infof("JSON payload: %s", evt)
 	snssvc := sns.New(cfg)
 	snsreq := snssvc.PublishRequest(&sns.PublishInput{
 		Message:  aws.String(fmt.Sprintf("%s", evt)),
@@ -75,6 +74,7 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	_, actionType := dat["actionType"].(string)
 
 	if actionType {
+		logWithRequestID.WithField("payload", evt).Info("actionType")
 		err = actionTypeDB(cfg, evt)
 		if err != nil {
 			logWithRequestID.WithError(err).Error("actionTypeDB")
@@ -82,6 +82,7 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 			return "", err
 		}
 	} else {
+		logWithRequestID.WithField("payload", evt).Info("postChangeMessage")
 		err = postChangeMessage(cfg, evt)
 		if err != nil {
 			logWithRequestID.WithError(err).Error("postChangeMessage")
@@ -189,6 +190,12 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return
 	}
 
+	// DB.SetMaxOpenConns(2)
+	// DB.SetMaxIdleConns(0)
+	if err = DB.Ping(); err != nil {
+		return
+	}
+
 	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
 	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
 
@@ -209,6 +216,10 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+APIAccessToken)
 
+	if err != nil {
+		logWithRequestID.WithError(err).Error("go2curl failed")
+	}
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logWithRequestID.WithError(err).Error("POST request")
@@ -221,7 +232,6 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return err
 	}
 
-	logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
 	var errorMessage string
 
 	var isCreatedByMe int
@@ -232,7 +242,12 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 	case http.StatusCreated:
 		isCreatedByMe = 1
 	default:
-		// return fmt.Errorf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt))
+		ctx.WithFields(log.Fields{
+			"status":   res.StatusCode,
+			"evt":      evt,
+			"response": string(resBody),
+		}).Error("MEFE process-api-payload")
+		// We don't stop here since we want to feedback errors to db
 		errorMessage = escape(fmt.Sprintf("Error: %s from MEFE: %s, Response: %s from Request: %s", res.Status, url, string(resBody), string(evt)))
 	}
 
@@ -246,9 +261,12 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	var parsedResponse creationResponse
 
-	parsedResponse.ID = fmt.Sprintf("error-%s-%d", act.Type, time.Now().UnixNano())
-
-	if errorMessage == "" { // only parse payload if there is no error
+	if errorMessage != "" {
+		parsedResponse.ID = fmt.Sprintf("error-%s-%d", act.Type, time.Now().UnixNano())
+		ctx = ctx.WithFields(log.Fields{
+			"errorMessage": errorMessage,
+		})
+	} else {
 		if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
 			logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
 			return err
@@ -266,7 +284,6 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		"id":               parsedResponse.ID,
 		"timestamp":        parsedResponse.Timestamp,
 		"is_created_by_me": isCreatedByMe,
-		"errorMessage":     errorMessage,
 	})
 
 	// https://dev.mysql.com/doc/refman/8.0/en/datetime.html
@@ -330,7 +347,7 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
-	ctx.Infof("DB.Exec filledSQL: %s", filledSQL)
+	ctx.Debugf("DB.Exec filledSQL: %s", filledSQL)
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
 		ctx.WithError(err).Error("running sql failed")
@@ -371,9 +388,15 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 		return err
 	}
 	if res.StatusCode == http.StatusOK {
-		logWithRequestID.Infof("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		logWithRequestID.WithFields(log.Fields{
+			"status":   res.StatusCode,
+			"response": string(resBody),
+		}).Info("OK")
 	} else {
-		logWithRequestID.Errorf("Response code %d, Body: %s", res.StatusCode, string(resBody))
+		logWithRequestID.WithFields(log.Fields{
+			"status":   res.StatusCode,
+			"response": string(resBody),
+		}).Error("MEFE db-change-message/process")
 		return fmt.Errorf("/api/db-change-message/process response code %d, Request: %s Response: %s", res.StatusCode, evt, string(resBody))
 	}
 	return err
@@ -381,7 +404,7 @@ func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
 
 // from https://github.com/golang/go/issues/18478#issuecomment-357285669
 func escape(source string) string {
-	var j int = 0
+	var j int
 	if len(source) == 0 {
 		return ""
 	}
