@@ -190,6 +190,8 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return
 	}
 
+	defer DB.Close()
+
 	// DB.SetMaxOpenConns(2)
 	// DB.SetMaxIdleConns(0)
 	if err = DB.Ping(); err != nil {
@@ -215,10 +217,6 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+APIAccessToken)
-
-	if err != nil {
-		logWithRequestID.WithError(err).Error("go2curl failed")
-	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
