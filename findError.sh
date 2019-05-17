@@ -16,7 +16,7 @@ shift "$((OPTIND-1))"
 
 if test "$1"
 then
-	apex -r ap-southeast-1 --env prod logs -F "{ $.fields.error = \"$1\" }" --since $since
+	apex -r ap-southeast-1 --env dev logs -F "{ $.fields.error = \"$1\" }" --since $since
 else
-	apex -r ap-southeast-1 --env prod logs -F "{ $.level = \"error\" }" --since $since
+	apex -r ap-southeast-1 --env dev logs -F "{ $.level = \"error\" }" --since $since
 fi

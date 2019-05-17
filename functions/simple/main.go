@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +21,10 @@ import (
 	"github.com/unee-t/env"
 )
 
-var logWithRequestID *log.Entry
+type withRequestID struct {
+	log *log.Entry
+}
+
 var account *string
 var DB *sql.DB
 var APIAccessToken string
@@ -61,6 +65,7 @@ func main() {
 		log.WithError(err).Fatal("error opening database")
 		return
 	}
+	defer DB.Close()
 
 	MEFEcase = fmt.Sprintf("https://%s", e.Udomain("case"))
 	APIAccessToken = e.GetSecret("API_ACCESS_TOKEN")
@@ -70,21 +75,20 @@ func main() {
 
 func handler(ctx context.Context, evt json.RawMessage) error {
 
-	log.Warn("HERE")
-
+	c := withRequestID{}
 	ctxObj, ok := lambdacontext.FromContext(ctx)
 	if ok {
-		logWithRequestID = log.WithFields(log.Fields{
+		c.log = log.WithFields(log.Fields{
 			"requestID": ctxObj.AwsRequestID,
 		})
 	} else {
 		log.Warn("no requestID context")
 	}
 
-	if err := DB.Ping(); err != nil {
-		logWithRequestID.WithError(err).Fatal("failed to ping DB")
-	}
-	logWithRequestID.WithField("evt", evt).Info("ping")
+	// if err := DB.Ping(); err != nil {
+	// 	c.log.WithError(err).Fatal("failed to ping DB")
+	// }
+	// c.log.WithField("evt", evt).Info("ping")
 
 	var dat map[string]interface{}
 	if err := json.Unmarshal(evt, &dat); err != nil {
@@ -94,17 +98,17 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 	_, actionType := dat["actionType"].(string)
 
 	if actionType {
-		logWithRequestID.WithField("payload", evt).Info("actionType")
-		err := actionTypeDB(evt)
+		c.log.WithField("payload", evt).Info("actionType")
+		err := c.actionTypeDB(evt)
 		if err != nil {
-			logWithRequestID.WithError(err).Error("actionTypeDB")
+			c.log.WithError(err).Error("actionTypeDB")
 			return err
 		}
 	} else {
-		logWithRequestID.WithField("payload", evt).Info("postChangeMessage")
-		err := postChangeMessage(evt)
+		c.log.WithField("payload", evt).Info("postChangeMessage")
+		err := c.postChangeMessage(evt)
 		if err != nil {
-			logWithRequestID.WithError(err).Error("postChangeMessage")
+			c.log.WithError(err).Error("postChangeMessage")
 			return nil // set to nil since we don't want lambda to retry on this type of failure
 		}
 	}
@@ -112,7 +116,7 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 	return nil
 }
 
-func actionTypeDB(evt json.RawMessage) (err error) {
+func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	// https://github.com/unee-t/lambda2sns/issues/9
 
 	type actionType struct {
@@ -128,11 +132,11 @@ func actionTypeDB(evt json.RawMessage) (err error) {
 	var act actionType
 
 	if err := json.Unmarshal(evt, &act); err != nil {
-		logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
+		c.log.WithError(err).Fatal("unable to unmarshall payload")
 		return err
 	}
 
-	ctx := logWithRequestID.WithField("actionType", act)
+	ctx := c.log.WithField("actionType", act)
 
 	switch act.Type {
 	case "CREATE_UNIT":
@@ -176,11 +180,11 @@ func actionTypeDB(evt json.RawMessage) (err error) {
 	}
 
 	url := MEFEcase + "/api/process-api-payload?accessToken=" + APIAccessToken
-	logWithRequestID.Debugf("Posting to: %s, payload %s", url, evt)
+	c.log.Debugf("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
-		logWithRequestID.WithError(err).Error("constructing POST")
+		c.log.WithError(err).Error("constructing POST")
 		return err
 	}
 
@@ -189,13 +193,13 @@ func actionTypeDB(evt json.RawMessage) (err error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logWithRequestID.WithError(err).Error("POST request")
+		c.log.WithError(err).Error("POST request")
 		return err
 	}
 	defer res.Body.Close()
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		logWithRequestID.WithError(err).Error("failed to read body")
+		c.log.WithError(err).Error("failed to read body")
 		return err
 	}
 
@@ -235,7 +239,7 @@ func actionTypeDB(evt json.RawMessage) (err error) {
 		})
 	} else {
 		if err := json.Unmarshal(resBody, &parsedResponse); err != nil {
-			logWithRequestID.WithError(err).Fatal("unable to unmarshall payload")
+			c.log.WithError(err).Fatal("unable to unmarshall payload")
 			return err
 		}
 
@@ -319,18 +323,21 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 		// ctx.Debugf("DB.Exec filledSQL: %s", filledSQL)
 		ctx.WithError(err).WithField("sql", filledSQL).Error("running sql failed")
 	}
-	// logWithRequestID.WithField("stats", DB.Stats()).Info("exec sql")
+	// c.log.WithField("stats", DB.Stats()).Info("exec sql")
+	if errorMessage != "" {
+		return errors.New(errorMessage)
+	}
 	return err
 }
 
 // For event notifications https://github.com/unee-t/lambda2sns/tree/master/tests/events
-func postChangeMessage(evt json.RawMessage) (err error) {
+func (c withRequestID) postChangeMessage(evt json.RawMessage) (err error) {
 	url := MEFEcase + "/api/db-change-message/process?accessToken=" + APIAccessToken
-	logWithRequestID.Infof("Posting to: %s, payload %s", url, evt)
+	c.log.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
 	if err != nil {
-		logWithRequestID.WithError(err).Error("constructing POST")
+		c.log.WithError(err).Error("constructing POST")
 		return err
 	}
 
@@ -339,22 +346,22 @@ func postChangeMessage(evt json.RawMessage) (err error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logWithRequestID.WithError(err).Error("POST request")
+		c.log.WithError(err).Error("POST request")
 		return err
 	}
 	defer res.Body.Close()
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		logWithRequestID.WithError(err).Error("failed to read body")
+		c.log.WithError(err).Error("failed to read body")
 		return err
 	}
 	if res.StatusCode == http.StatusOK {
-		logWithRequestID.WithFields(log.Fields{
+		c.log.WithFields(log.Fields{
 			"status":   res.StatusCode,
 			"response": string(resBody),
 		}).Info("OK")
 	} else {
-		logWithRequestID.WithFields(log.Fields{
+		c.log.WithFields(log.Fields{
 			"status":   res.StatusCode,
 			"response": string(resBody),
 		}).Error("MEFE db-change-message/process")
