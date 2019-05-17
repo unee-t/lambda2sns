@@ -14,34 +14,25 @@ import (
 	jsonhandler "github.com/apex/log/handlers/json"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/lambdacontext"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/unee-t/env"
 )
 
-var account *string
 var logWithRequestID *log.Entry
+var account *string
+var DB *sql.DB
+var APIAccessToken string
+var MEFEcase string
 
 func main() {
 	log.SetHandler(jsonhandler.Default)
-	lambda.Start(handler)
-}
-
-func handler(ctx context.Context, evt json.RawMessage) (string, error) {
+	log.Info("init")
 
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
-		return "", err
-	}
-
-	ctxObj, ok := lambdacontext.FromContext(ctx)
-	if ok {
-		logWithRequestID = log.WithFields(log.Fields{
-			"requestID": ctxObj.AwsRequestID,
-		})
+		log.WithError(err).Fatal("failed to load AWS config")
 	}
 
 	stssvc := sts.New(cfg)
@@ -50,73 +41,87 @@ func handler(ctx context.Context, evt json.RawMessage) (string, error) {
 	req := stssvc.GetCallerIdentityRequest(input)
 	result, err := req.Send()
 	if err != nil {
-		return "", err
+		log.WithError(err).Fatal("failed to call stssvc")
 	}
 
 	account = result.Account
 
-	snssvc := sns.New(cfg)
-	snsreq := snssvc.PublishRequest(&sns.PublishInput{
-		Message:  aws.String(fmt.Sprintf("%s", evt)),
-		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:atest", aws.StringValue(result.Account))),
-	})
-
-	resp, err := snsreq.Send()
+	e, err := env.New(cfg)
 	if err != nil {
-		return "", err
+		log.WithError(err).Fatal("failed to setup unee-t env")
 	}
+
+	DSN := fmt.Sprintf("%s:%s@tcp(%s:3306)/unee_t_enterprise?multiStatements=true&sql_mode=TRADITIONAL&timeout=5s&collation=utf8mb4_unicode_520_ci",
+		e.GetSecret("LAMBDA_INVOKER_USERNAME"),
+		e.GetSecret("LAMBDA_INVOKER_PASSWORD"),
+		e.Udomain("auroradb"))
+
+	DB, err = sql.Open("mysql", DSN)
+	if err != nil {
+		log.WithError(err).Fatal("error opening database")
+		return
+	}
+
+	MEFEcase = fmt.Sprintf("https://%s", e.Udomain("case"))
+	APIAccessToken = e.GetSecret("API_ACCESS_TOKEN")
+
+	lambda.Start(handler)
+}
+
+func handler(ctx context.Context, evt json.RawMessage) error {
+
+	log.Warn("HERE")
+
+	ctxObj, ok := lambdacontext.FromContext(ctx)
+	if ok {
+		logWithRequestID = log.WithFields(log.Fields{
+			"requestID": ctxObj.AwsRequestID,
+		})
+	} else {
+		log.Warn("no requestID context")
+	}
+
+	if err := DB.Ping(); err != nil {
+		logWithRequestID.WithError(err).Fatal("failed to ping DB")
+	}
+	logWithRequestID.WithField("evt", evt).Info("ping")
 
 	var dat map[string]interface{}
 	if err := json.Unmarshal(evt, &dat); err != nil {
-		return "", err
+		return err
 	}
 
 	_, actionType := dat["actionType"].(string)
 
 	if actionType {
 		logWithRequestID.WithField("payload", evt).Info("actionType")
-		err = actionTypeDB(cfg, evt)
+		err := actionTypeDB(evt)
 		if err != nil {
 			logWithRequestID.WithError(err).Error("actionTypeDB")
-			err = reportError(snssvc, err.Error())
-			return "", err
+			return err
 		}
 	} else {
 		logWithRequestID.WithField("payload", evt).Info("postChangeMessage")
-		err = postChangeMessage(cfg, evt)
+		err := postChangeMessage(evt)
 		if err != nil {
 			logWithRequestID.WithError(err).Error("postChangeMessage")
-			// Too much noise
-			// err = reportError(snssvc, err.Error())
-			return "", nil // set to nil since we don't want lambda to retry on this type of failure
+			return nil // set to nil since we don't want lambda to retry on this type of failure
 		}
 	}
 
-	return fmt.Sprintf("Response: %s", resp), nil
+	return nil
 }
 
-func reportError(snssvc *sns.SNS, message string) error {
-	snsreq := snssvc.PublishRequest(&sns.PublishInput{
-		Message:  aws.String(message),
-		TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:ap-southeast-1:%s:process-api-payload", aws.StringValue(account))),
-	})
-	_, err := snsreq.Send()
-	if err != nil {
-		logWithRequestID.Infof("Reported: %s", message)
-	}
-	return err
-}
-
-func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
+func actionTypeDB(evt json.RawMessage) (err error) {
 	// https://github.com/unee-t/lambda2sns/issues/9
 
 	type actionType struct {
-		UnitCreationRequestID       int    `json:"unitCreationRequestId"`
-		UserCreationRequestID       int    `json:"userCreationRequestId"`
-		MEFIRequestID               int    `json:"mefeAPIRequestId"`
-		UpdateUserRequestID         int    `json:"updateUserRequestId"`
-		UpdateUnitRequestID         int    `json:"updateUnitRequestId"`
-		RemoveUserFromUnitRequestID int    `json:"removeUserFromUnitRequestId"`
+		UnitCreationRequestID       int    `json:"unitCreationRequestId,omitempty"`
+		UserCreationRequestID       int    `json:"userCreationRequestId,omitempty"`
+		MEFIRequestID               int    `json:"mefeAPIRequestId,omitempty"`
+		UpdateUserRequestID         int    `json:"updateUserRequestId,omitempty"`
+		UpdateUnitRequestID         int    `json:"updateUnitRequestId,omitempty"`
+		RemoveUserFromUnitRequestID int    `json:"removeUserFromUnitRequestId,omitempty"`
 		Type                        string `json:"actionType"`
 	}
 
@@ -127,14 +132,7 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 		return err
 	}
 
-	ctx := logWithRequestID.WithFields(log.Fields{
-		"type":                        act.Type,
-		"unitCreationRequestId":       act.UnitCreationRequestID,
-		"userCreationRequestId":       act.UserCreationRequestID,
-		"updateUserRequestId":         act.UpdateUserRequestID,
-		"updateUnitRequestId":         act.UpdateUnitRequestID,
-		"removeUserFromUnitRequestId": act.RemoveUserFromUnitRequestID,
-	})
+	ctx := logWithRequestID.WithField("actionType", act)
 
 	switch act.Type {
 	case "CREATE_UNIT":
@@ -168,45 +166,16 @@ func actionTypeDB(cfg aws.Config, evt json.RawMessage) (err error) {
 			return fmt.Errorf("missing removeUserFromUnitRequestId")
 		}
 	default:
-		ctx.Errorf("Unknown type: %s", act.Type)
-		return fmt.Errorf("Unknown type: %s", act.Type)
+		ctx.Error("unknown type")
+		return fmt.Errorf("unknown type: %s", act.Type)
 	}
-
-	// Establish connection to DB
-
-	e, err := env.New(cfg)
-	if err != nil {
-		return err
-	}
-
-	DSN := fmt.Sprintf("%s:%s@tcp(%s:3306)/unee_t_enterprise?multiStatements=true&sql_mode=TRADITIONAL&timeout=5s&collation=utf8mb4_unicode_520_ci",
-		e.GetSecret("LAMBDA_INVOKER_USERNAME"),
-		e.GetSecret("LAMBDA_INVOKER_PASSWORD"),
-		e.Udomain("auroradb"))
-
-	DB, err := sql.Open("mysql", DSN)
-	if err != nil {
-		logWithRequestID.WithError(err).Fatal("error opening database")
-		return
-	}
-
-	defer DB.Close()
-
-	// DB.SetMaxOpenConns(2)
-	// DB.SetMaxIdleConns(0)
-	if err = DB.Ping(); err != nil {
-		return
-	}
-
-	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
-	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
 
 	if APIAccessToken == "" {
-		log.Error("missing API_ACCESS_TOKEN credential")
+		ctx.Error("missing API_ACCESS_TOKEN credential")
 		return fmt.Errorf("missing API_ACCESS_TOKEN credential")
 	}
 
-	url := casehost + "/api/process-api-payload?accessToken=" + APIAccessToken
+	url := MEFEcase + "/api/process-api-payload?accessToken=" + APIAccessToken
 	logWithRequestID.Debugf("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
@@ -345,24 +314,18 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}
-	ctx.Debugf("DB.Exec filledSQL: %s", filledSQL)
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
-		ctx.WithError(err).Error("running sql failed")
+		// ctx.Debugf("DB.Exec filledSQL: %s", filledSQL)
+		ctx.WithError(err).WithField("sql", filledSQL).Error("running sql failed")
 	}
+	// logWithRequestID.WithField("stats", DB.Stats()).Info("exec sql")
 	return err
 }
 
 // For event notifications https://github.com/unee-t/lambda2sns/tree/master/tests/events
-func postChangeMessage(cfg aws.Config, evt json.RawMessage) (err error) {
-	e, err := env.New(cfg)
-	if err != nil {
-		return err
-	}
-	casehost := fmt.Sprintf("https://%s", e.Udomain("case"))
-	APIAccessToken := e.GetSecret("API_ACCESS_TOKEN")
-
-	url := casehost + "/api/db-change-message/process?accessToken=" + APIAccessToken
+func postChangeMessage(evt json.RawMessage) (err error) {
+	url := MEFEcase + "/api/db-change-message/process?accessToken=" + APIAccessToken
 	logWithRequestID.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
