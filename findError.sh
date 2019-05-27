@@ -14,9 +14,18 @@ while getopts S: opt; do
 done
 shift "$((OPTIND-1))"
 
+if test -z "$AWS_PROFILE"
+then
+	echo AWS_PROFILE unset
+	exit 1
+fi
+echo Profile: $AWS_PROFILE
+
+env=$(echo $AWS_PROFILE | cut -c 7-)
+
 if test "$1"
 then
-	apex -r ap-southeast-1 --env dev logs -F "{ $.fields.error = \"$1\" }" --since $since
+	apex -r ap-southeast-1 --env $env logs -F "{ $.fields.error = \"$1\" }" --since $since
 else
-	apex -r ap-southeast-1 --env dev logs -F "{ $.level = \"error\" }" --since $since
+	apex -r ap-southeast-1 --env $env logs -F "{ $.level = \"error\" }" --since $since
 fi

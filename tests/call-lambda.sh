@@ -38,7 +38,6 @@ ssm() {
 	aws --profile uneet-$STAGE ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text
 }
 
-#jq -c . $json | phony --max 1
 echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:alambda_simple', '$(jq -c . $json | phony --max 1)' );" |
 mysql -h $(domain $STAGE) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
 done

@@ -32,7 +32,6 @@ var MEFEcase string
 
 func main() {
 	log.SetHandler(jsonhandler.Default)
-	log.Info("init")
 
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -101,7 +100,7 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		c.log.WithField("payload", evt).Info("actionType")
 		err := c.actionTypeDB(evt)
 		if err != nil {
-			c.log.WithError(err).Error("actionTypeDB")
+			// c.log.WithError(err).Error("actionTypeDB")
 			return err
 		}
 	} else {
@@ -112,7 +111,6 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 			return nil // set to nil since we don't want lambda to retry on this type of failure
 		}
 	}
-
 	return nil
 }
 
@@ -324,8 +322,13 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 		ctx.WithError(err).WithField("sql", filledSQL).Error("running sql failed")
 	}
 	// c.log.WithField("stats", DB.Stats()).Info("exec sql")
-	if errorMessage != "" {
+	if errorMessage != "" && res.StatusCode >= 500 {
+		// Payload is valid, but the action took took long (POST time out, database time out)
 		return errors.New(errorMessage)
+	}
+	if errorMessage != "" {
+		// Assuming Payload is wrong
+		ctx.WithField("status", res.StatusCode).Warn("not returning an error for triggering a retry")
 	}
 	return err
 }
