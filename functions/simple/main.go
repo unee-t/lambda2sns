@@ -231,7 +231,7 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	var parsedResponse creationResponse
 
 	if errorMessage != "" {
-		parsedResponse.ID = fmt.Sprintf("error-%s-%d", act.Type, time.Now().UnixNano())
+		// parsedResponse.ID = fmt.Sprintf("error-%s-%d", act.Type, time.Now().UnixNano())
 		ctx = ctx.WithFields(log.Fields{
 			"errorMessage": errorMessage,
 		})
@@ -318,8 +318,9 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 	}
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
-		// ctx.Debugf("DB.Exec filledSQL: %s", filledSQL)
 		ctx.WithError(err).WithField("sql", filledSQL).Error("running sql failed")
+		// retry if DB exec fails
+		return err
 	}
 	// c.log.WithField("stats", DB.Stats()).Info("exec sql")
 	if errorMessage != "" && res.StatusCode >= 500 {
