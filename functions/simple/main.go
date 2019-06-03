@@ -120,7 +120,8 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	type actionType struct {
 		UnitCreationRequestID       int    `json:"unitCreationRequestId,omitempty"`
 		UserCreationRequestID       int    `json:"userCreationRequestId,omitempty"`
-		MEFIRequestID               int    `json:"mefeAPIRequestId,omitempty"`
+		IDmapUserUnitPermissions    int    `json:"idMapUserUnitPermission,omitempty"`
+		MEFIRequestID               string `json:"mefeAPIRequestId,omitempty"`
 		UpdateUserRequestID         int    `json:"updateUserRequestId,omitempty"`
 		UpdateUnitRequestID         int    `json:"updateUnitRequestId,omitempty"`
 		RemoveUserFromUnitRequestID int    `json:"removeUserFromUnitRequestId,omitempty"`
@@ -135,6 +136,10 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	}
 
 	ctx := c.log.WithField("actionType", act)
+	if act.MEFIRequestID == "" {
+		ctx.Error("missing mefeAPIRequestId")
+		return fmt.Errorf("missing mefeAPIRequestId")
+	}
 
 	switch act.Type {
 	case "CREATE_UNIT":
@@ -158,9 +163,9 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 			return fmt.Errorf("missing userCreationRequestId")
 		}
 	case "ASSIGN_ROLE":
-		if act.MEFIRequestID == 0 {
-			ctx.Error("missing mefeAPIRequestId")
-			return fmt.Errorf("missing mefeAPIRequestId")
+		if act.IDmapUserUnitPermissions == 0 {
+			ctx.Error("missing idMapUserUnitPermission")
+			return fmt.Errorf("missing idMapUserUnitPermission")
 		}
 	case "DEASSIGN_ROLE":
 		if act.RemoveUserFromUnitRequestID == 0 {
@@ -290,11 +295,11 @@ CALL ut_creation_user_mefe_api_reply;`
 			parsedResponse.MefeAPIkey,
 		)
 	case "ASSIGN_ROLE":
-		templateSQL := `SET @mefe_api_request_id = %d;
+		templateSQL := `SET @id_map_user_unit_permissions = %d;
 SET @creation_datetime = '%s';
 SET @mefe_api_error_message = '%s';
 CALL ut_creation_user_role_association_mefe_api_reply;`
-		filledSQL = fmt.Sprintf(templateSQL, act.MEFIRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
+		filledSQL = fmt.Sprintf(templateSQL, act.IDmapUserUnitPermissions, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
 	case "EDIT_USER":
 		templateSQL := `SET @update_user_request_id = %d;
 SET @updated_datetime = '%s';
