@@ -1,8 +1,8 @@
-logs:
-	apex -r ap-southeast-1 --env dev logs -f
-
 all:
 	@echo make {dev,demo,prod} to deploy
+
+logs:
+	apex -r ap-southeast-1 --env dev logs -f
 
 dev:
 	@echo $$AWS_ACCESS_KEY_ID
