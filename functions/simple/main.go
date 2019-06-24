@@ -323,8 +323,14 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 	}
 	_, err = DB.Exec(filledSQL)
 	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			// https://github.com/unee-t/lambda2sns/issues/20
+			ctx.WithError(err).WithField("sql", filledSQL).Warn("Duplicate entry")
+			return nil
+		}
 		ctx.WithError(err).WithField("sql", filledSQL).Error("running sql failed")
-		// retry if DB exec fails
+		// automatically retry the invocation twice, with delays between retries
+		// https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html
 		return err
 	}
 	// c.log.WithField("stats", DB.Stats()).Info("exec sql")
