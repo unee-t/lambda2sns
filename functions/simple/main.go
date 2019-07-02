@@ -182,7 +182,7 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 		return fmt.Errorf("missing API_ACCESS_TOKEN credential")
 	}
 
-	url := MEFEcase + "/api/process-api-payload?accessToken=" + APIAccessToken
+	url := MEFEcase + "/api/process-api-payload"
 	c.log.Debugf("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
@@ -347,7 +347,7 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 
 // For event notifications https://github.com/unee-t/lambda2sns/tree/master/tests/events
 func (c withRequestID) postChangeMessage(evt json.RawMessage) (err error) {
-	url := MEFEcase + "/api/db-change-message/process?accessToken=" + APIAccessToken
+	url := MEFEcase + "/api/db-change-message/process"
 	c.log.Infof("Posting to: %s, payload %s", url, evt)
 
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(evt)))
