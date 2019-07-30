@@ -72,6 +72,26 @@ func main() {
 	lambda.Start(handler)
 }
 
+type SQSevent struct {
+	Records []struct {
+		MessageID     string `json:"messageId"`
+		ReceiptHandle string `json:"receiptHandle"`
+		Body          string `json:"body"`
+		Attributes    struct {
+			ApproximateReceiveCount          string `json:"ApproximateReceiveCount"`
+			SentTimestamp                    string `json:"SentTimestamp"`
+			SenderID                         string `json:"SenderId"`
+			ApproximateFirstReceiveTimestamp string `json:"ApproximateFirstReceiveTimestamp"`
+		} `json:"attributes"`
+		MessageAttributes struct {
+		} `json:"messageAttributes"`
+		Md5OfBody      string `json:"md5OfBody"`
+		EventSource    string `json:"eventSource"`
+		EventSourceARN string `json:"eventSourceARN"`
+		AwsRegion      string `json:"awsRegion"`
+	} `json:"Records"`
+}
+
 func handler(ctx context.Context, evt json.RawMessage) error {
 
 	c := withRequestID{}
@@ -84,23 +104,33 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		log.Warn("no requestID context")
 	}
 
-	// if err := DB.Ping(); err != nil {
-	// 	c.log.WithError(err).Fatal("failed to ping DB")
-	// }
-	// c.log.WithField("evt", evt).Info("ping")
-
+	var sqsMessage SQSevent
 	var dat map[string]interface{}
-	if err := json.Unmarshal(evt, &dat); err != nil {
-		return err
+
+	// Check if SQS event https://github.com/unee-t/lambda2sns/issues/21
+	err := json.Unmarshal(evt, &sqsMessage)
+	if err == nil && len(sqsMessage.Records) > 0 {
+		log.WithField("body", sqsMessage.Records[0].Body).Info("SQS interface")
+		err = json.Unmarshal([]byte(sqsMessage.Records[0].Body), &dat)
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Info("Lambda interface")
+		err = json.Unmarshal(evt, &dat)
+		if err != nil {
+			return err
+		}
 	}
 
+	// What type of payload is this?
 	_, actionType := dat["actionType"].(string)
 
 	if actionType {
 		c.log.WithField("payload", evt).Info("actionType")
 		err := c.actionTypeDB(evt)
 		if err != nil {
-			// c.log.WithError(err).Error("actionTypeDB")
+			c.log.WithError(err).Error("actionTypeDB")
 			return err
 		}
 	} else {

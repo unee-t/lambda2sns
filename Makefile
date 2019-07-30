@@ -4,6 +4,9 @@ all:
 logs:
 	apex -r ap-southeast-1 --env dev logs -f
 
+prodlogs:
+	apex -r ap-southeast-1 --env prod logs -f
+
 dev:
 	@echo $$AWS_ACCESS_KEY_ID
 	apex -r ap-southeast-1 --env dev deploy
