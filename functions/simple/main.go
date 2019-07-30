@@ -123,18 +123,25 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		}
 	}
 
+	log.WithField("dat", dat).Info("Payload")
+
 	// What type of payload is this?
 	_, actionType := dat["actionType"].(string)
+	// Use dat to replace evt, since it might be parsed out of SQS
+	evt, err = json.Marshal(dat)
+	if err != nil {
+		return err
+	}
 
 	if actionType {
-		c.log.WithField("payload", evt).Info("actionType")
+		c.log.WithField("evt", evt).Info("actionType")
 		err := c.actionTypeDB(evt)
 		if err != nil {
 			c.log.WithError(err).Error("actionTypeDB")
 			return err
 		}
 	} else {
-		c.log.WithField("payload", evt).Info("postChangeMessage")
+		c.log.WithField("evt", evt).Info("postChangeMessage")
 		err := c.postChangeMessage(evt)
 		if err != nil {
 			c.log.WithError(err).Error("postChangeMessage")
@@ -159,6 +166,8 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	}
 
 	var act actionType
+
+	log.WithField("evt", evt).Info("in actiontypeDB")
 
 	if err := json.Unmarshal(evt, &act); err != nil {
 		c.log.WithError(err).Fatal("unable to unmarshall payload")
