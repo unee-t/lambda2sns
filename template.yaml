@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM Lambda2SNS
+
+Globals:
+  Function:
+    Runtime: go1.x
+    Timeout: 60
+
+Resources:
+  SAMLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-66390301
+        SubnetIds:
+          - subnet-0ff046ccc4e3b6281
+          - subnet-0938728dfb344b970
+          - subnet-0e123bd457c082cff
+      Role: !GetAtt LambdaRole.Arn
+      CodeUri: .
+      FunctionName: alambda_simple
+      Tracing: Active
+      Handler: lambda2sns
+      Runtime: go1.x
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt [RetryDeleteQueue, Arn]
+
+  RetrySAMLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: !GetAtt LambdaRole.Arn
+      CodeUri: .
+      FunctionName: alambda_simple_retry
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-66390301
+        SubnetIds:
+          - subnet-0ff046ccc4e3b6281
+          - subnet-0938728dfb344b970
+          - subnet-0e123bd457c082cff
+      Tracing: Active
+      Handler: lambda2sns
+      Runtime: go1.x
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt [RetryDeleteQueue, Arn]
+            BatchSize: 1
+
+  RetryDeleteDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+  RetryDeleteQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 90
+      MessageRetentionPeriod: 604800
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt [RetryDeleteDeadLetterQueue, Arn]
+        maxReceiveCount: 3
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole

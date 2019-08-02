@@ -1,5 +1,13 @@
 [![Build Status](https://travis-ci.org/unee-t/lambda2sns.svg?branch=master)](https://travis-ci.org/unee-t/lambda2sns)
 
+<img src="https://media.dev.unee-t.com/2019-08-02/lambda2sns.png" alt="Lambda2sns">
+
+lambda2sns originally started life as a bridge for [Aurora CALL
+mysql.lambda_async](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.Lambda.html)
+payloads to SNS to be subscribed to. It has evolved to do a lot more, with most
+of the complexity coming from the requirement to write results back to the
+originating database.
+
 	lambda: arn:aws:lambda:ap-southeast-1:812644853088:function:alambda_simple
 	sns: arn:aws:sns:ap-southeast-1:812644853088:atest
 
@@ -24,12 +32,6 @@ Then you should get an email of the JSON payload.
 [Last five minutes](https://ap-southeast-1.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-1#logEventViewer:group=/aws/lambda/alambda_simple;start=PT5M)
 
 # Setup
-
-## lambda role
-
-Assuming project.demo.json is created with correct profile.
-
-	apex -r ap-southeast-1 --env demo init
 
 ## sns topic
 
