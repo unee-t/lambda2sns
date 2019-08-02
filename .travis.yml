@@ -19,13 +19,13 @@ deploy:
     script: AWS_ACCESS_KEY_ID=$AWS_915001051872_ID AWS_SECRET_ACCESS_KEY=$AWS_915001051872_SECRET make demo
     skip_cleanup: true
     on:
-       branch: master
+      branch: master
   # production
   - provider: script
     script: AWS_ACCESS_KEY_ID=$AWS_192458993663_ID AWS_SECRET_ACCESS_KEY=$AWS_192458993663_SECRET make prod
     skip_cleanup: true
     on:
-       branch: master
+      branch: master
 
 env:
   - GO111MODULE=on

@@ -7,17 +7,22 @@ Globals:
     Runtime: go1.x
     Timeout: 60
 
+Parameters:
+  DefaultSecurityGroup:
+    Type: String
+    Default: sg-66390301
+  PrivateSubnets:
+    Type: String
+    Default: >
+      subnet-0ff046ccc4e3b6281,subnet-0938728dfb344b970,subnet-0e123bd457c082cff
+
 Resources:
   SAMLambda:
     Type: AWS::Serverless::Function
     Properties:
       VpcConfig:
-        SecurityGroupIds:
-          - sg-66390301
-        SubnetIds:
-          - subnet-0ff046ccc4e3b6281
-          - subnet-0938728dfb344b970
-          - subnet-0e123bd457c082cff
+        SecurityGroupIds: [!Ref DefaultSecurityGroup]
+        SubnetIds: !Split [',', !Ref PrivateSubnets]
       Role: !GetAtt LambdaRole.Arn
       CodeUri: .
       FunctionName: alambda_simple
@@ -35,12 +40,8 @@ Resources:
       CodeUri: .
       FunctionName: alambda_simple_retry
       VpcConfig:
-        SecurityGroupIds:
-          - sg-66390301
-        SubnetIds:
-          - subnet-0ff046ccc4e3b6281
-          - subnet-0938728dfb344b970
-          - subnet-0e123bd457c082cff
+        SecurityGroupIds: [!Ref DefaultSecurityGroup]
+        SubnetIds: !Split [',', !Ref PrivateSubnets]
       Tracing: Active
       Handler: lambda2sns
       Runtime: go1.x
