@@ -72,6 +72,26 @@ func main() {
 	lambda.Start(handler)
 }
 
+type SQSevent struct {
+	Records []struct {
+		MessageID     string `json:"messageId"`
+		ReceiptHandle string `json:"receiptHandle"`
+		Body          string `json:"body"`
+		Attributes    struct {
+			ApproximateReceiveCount          string `json:"ApproximateReceiveCount"`
+			SentTimestamp                    string `json:"SentTimestamp"`
+			SenderID                         string `json:"SenderId"`
+			ApproximateFirstReceiveTimestamp string `json:"ApproximateFirstReceiveTimestamp"`
+		} `json:"attributes"`
+		MessageAttributes struct {
+		} `json:"messageAttributes"`
+		Md5OfBody      string `json:"md5OfBody"`
+		EventSource    string `json:"eventSource"`
+		EventSourceARN string `json:"eventSourceARN"`
+		AwsRegion      string `json:"awsRegion"`
+	} `json:"Records"`
+}
+
 func handler(ctx context.Context, evt json.RawMessage) error {
 
 	c := withRequestID{}
@@ -84,27 +104,44 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		log.Warn("no requestID context")
 	}
 
-	// if err := DB.Ping(); err != nil {
-	// 	c.log.WithError(err).Fatal("failed to ping DB")
-	// }
-	// c.log.WithField("evt", evt).Info("ping")
-
+	var sqsMessage SQSevent
 	var dat map[string]interface{}
-	if err := json.Unmarshal(evt, &dat); err != nil {
-		return err
-	}
 
-	_, actionType := dat["actionType"].(string)
-
-	if actionType {
-		c.log.WithField("payload", evt).Info("actionType")
-		err := c.actionTypeDB(evt)
+	// Check if SQS event https://github.com/unee-t/lambda2sns/issues/21
+	err := json.Unmarshal(evt, &sqsMessage)
+	if err == nil && len(sqsMessage.Records) > 0 {
+		log.WithField("body", sqsMessage.Records[0].Body).Info("SQS interface")
+		err = json.Unmarshal([]byte(sqsMessage.Records[0].Body), &dat)
 		if err != nil {
-			// c.log.WithError(err).Error("actionTypeDB")
 			return err
 		}
 	} else {
-		c.log.WithField("payload", evt).Info("postChangeMessage")
+		log.Info("Lambda interface")
+		err = json.Unmarshal(evt, &dat)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.WithField("dat", dat).Info("Payload")
+
+	// What type of payload is this?
+	_, actionType := dat["actionType"].(string)
+	// Use dat to replace evt, since it might be parsed out of SQS
+	evt, err = json.Marshal(dat)
+	if err != nil {
+		return err
+	}
+
+	if actionType {
+		c.log.WithField("evt", evt).Info("actionType")
+		err := c.actionTypeDB(evt)
+		if err != nil {
+			c.log.WithError(err).Error("actionTypeDB")
+			return err
+		}
+	} else {
+		c.log.WithField("evt", evt).Info("postChangeMessage")
 		err := c.postChangeMessage(evt)
 		if err != nil {
 			c.log.WithError(err).Error("postChangeMessage")
@@ -129,6 +166,8 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	}
 
 	var act actionType
+
+	log.WithField("evt", evt).Info("in actiontypeDB")
 
 	if err := json.Unmarshal(evt, &act); err != nil {
 		c.log.WithError(err).Fatal("unable to unmarshall payload")
