@@ -179,7 +179,6 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 		ctx.Error("missing mefeAPIRequestId")
 		return fmt.Errorf("missing mefeAPIRequestId")
 	}
-
 	switch act.Type {
 	case "CREATE_UNIT":
 		if act.UnitCreationRequestID == 0 {
