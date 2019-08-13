@@ -64,7 +64,7 @@ Resources:
       MessageRetentionPeriod: 604800
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt [RetryDeleteDeadLetterQueue, Arn]
-        maxReceiveCount: 3
+        maxReceiveCount: 10
 
   LambdaRole:
     Type: AWS::IAM::Role

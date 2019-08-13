@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -124,6 +125,31 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 	}
 
 	log.WithField("dat", dat).Info("Payload")
+	encodedPayload, plb64 := dat["plb64"].(string)
+
+	// DELIMITER ;;
+	// CREATE PROCEDURE `testing` ()
+	// BEGIN
+	// CALL mysql.lambda_async(CONCAT('arn:aws:lambda:ap-southeast-1:812644853088:function:alambda_simple')
+	// , CONCAT('{"plb64":"',  TO_BASE64( JSON_OBJECT ('notification_type', 213) ), '"}'))
+	// ;
+	// END;;
+	// DELIMITER ;
+
+	if plb64 {
+		data, err := base64.StdEncoding.DecodeString(encodedPayload)
+		if err != nil {
+			c.log.WithError(err).Error("decoding plb64")
+			return err
+		}
+		var decodedJSON map[string]interface{}
+		err = json.Unmarshal(data, &decodedJSON)
+		if err != nil {
+			c.log.WithError(err).Error("plb64 not a JSON_OBJECT?")
+			return err
+		}
+		dat = decodedJSON
+	}
 
 	// What type of payload is this?
 	_, actionType := dat["actionType"].(string)

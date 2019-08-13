@@ -32,5 +32,9 @@ demo: build
 	AWS_PROFILE=uneet-demo sam package --template-file template.yaml --s3-bucket demo-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
 	AWS_PROFILE=uneet-demo sam deploy --template-file ./packaged.yaml --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=sg-6f66d316 PrivateSubnets=subnet-0bdef9ce0d0e2f596,subnet-091e5c7d98cd80c0d,subnet-0fbf1eb8af1ca56e3
 
+prod: build
+	AWS_PROFILE=uneet-prod sam package --template-file template.yaml --s3-bucket prod-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
+	AWS_PROFILE=uneet-prod sam deploy --template-file ./packaged.yaml --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=sg-9f5b5ef8 PrivateSubnets=subnet-0df289b6d96447a84,subnet-0e41c71ad02ee7e99,subnet-01cb9ee064743ac56
+
 lint:
 	cfn-lint template.yaml
