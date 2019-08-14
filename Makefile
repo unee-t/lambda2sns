@@ -8,7 +8,7 @@ DEPLOY_S3_PREFIX = lambda2sns
 # https://blog.deleu.dev/leveraging-aws-sqs-retry-mechanism-lambda/
 
 deps:
-	go mod tidy
+	GO111MODULE=on go mod tidy
 
 build: deps
 	GOOS=linux GOARCH=amd64 go build -o lambda2sns .

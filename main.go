@@ -124,7 +124,6 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		}
 	}
 
-	log.WithField("dat", dat).Info("Payload")
 	encodedPayload, plb64 := dat["plb64"].(string)
 
 	// DELIMITER ;;
@@ -174,6 +173,7 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 			return nil // set to nil since we don't want lambda to retry on this type of failure
 		}
 	}
+	c.log.WithField("evt", evt).Info("processed")
 	return nil
 }
 
@@ -193,7 +193,7 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 
 	var act actionType
 
-	log.WithField("evt", evt).Info("in actiontypeDB")
+	// log.WithField("evt", evt).Info("in actiontypeDB")
 
 	if err := json.Unmarshal(evt, &act); err != nil {
 		c.log.WithError(err).Fatal("unable to unmarshall payload")
