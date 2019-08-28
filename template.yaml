@@ -60,7 +60,7 @@ Resources:
   RetryDeleteQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 90
+      VisibilityTimeout: 120
       MessageRetentionPeriod: 604800
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt [RetryDeleteDeadLetterQueue, Arn]

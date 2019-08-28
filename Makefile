@@ -19,11 +19,14 @@ test:
 logs:
 	sam logs -n alambda_simple -t
 
+rtlogs:
+	sam logs -n alambda_simple_retry -t
+
 destroy:
 	aws cloudformation delete-stack \
 		--stack-name $(STACK_NAME)
 
-deploy: build
+dev: build
 	sam validate --template template.yaml
 	sam package --template-file template.yaml --s3-bucket dev-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
 	AWS_PROFILE=uneet-dev sam deploy --template-file ./packaged.yaml --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM
