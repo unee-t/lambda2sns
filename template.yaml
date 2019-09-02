@@ -1,11 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM Lambda2SNS
+Description: Lambda2SQS
 
 Globals:
   Function:
     Runtime: go1.x
-    Timeout: 60
 
 Parameters:
   DefaultSecurityGroup:
@@ -17,53 +16,48 @@ Parameters:
       subnet-0ff046ccc4e3b6281,subnet-0938728dfb344b970,subnet-0e123bd457c082cff
 
 Resources:
-  SAMLambda:
+  Push:
     Type: AWS::Serverless::Function
     Properties:
-      VpcConfig:
-        SecurityGroupIds: [!Ref DefaultSecurityGroup]
-        SubnetIds: !Split [',', !Ref PrivateSubnets]
+      FunctionName: push
       Role: !GetAtt LambdaRole.Arn
       CodeUri: .
-      FunctionName: alambda_simple
-      Tracing: Active
-      Handler: lambda2sns
+      Handler: push-bin
       Runtime: go1.x
-      DeadLetterQueue:
-        Type: SQS
-        TargetArn: !GetAtt [RetryDeleteQueue, Arn]
+      Environment:
+        Variables:
+          SQS_URL: !Ref SQLTriggerQueue
 
-  RetrySAMLambda:
+  Process:
     Type: AWS::Serverless::Function
     Properties:
       Role: !GetAtt LambdaRole.Arn
       CodeUri: .
-      FunctionName: alambda_simple_retry
+      FunctionName: process
       VpcConfig:
         SecurityGroupIds: [!Ref DefaultSecurityGroup]
         SubnetIds: !Split [',', !Ref PrivateSubnets]
-      Tracing: Active
-      Handler: lambda2sns
+      Handler: process-bin
       Runtime: go1.x
       Events:
         SQSEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt [RetryDeleteQueue, Arn]
+            Queue: !GetAtt [SQLTriggerQueue, Arn]
             BatchSize: 1
 
-  RetryDeleteDeadLetterQueue:
+  SQLTriggerQueueDLQ:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600
 
-  RetryDeleteQueue:
+  SQLTriggerQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 120
       MessageRetentionPeriod: 604800
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt [RetryDeleteDeadLetterQueue, Arn]
+        deadLetterTargetArn: !GetAtt [SQLTriggerQueueDLQ, Arn]
         maxReceiveCount: 10
 
   LambdaRole:
