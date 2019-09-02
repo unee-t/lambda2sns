@@ -15,10 +15,10 @@ test:
 	go test ./...
 
 push-logs:
-	sam logs -n push -t
+	sam logs -n ut_lambda2sqs_push -t
 
 process-logs:
-	sam logs -n process -t
+	sam logs -n ut_lambda2sqs_process -t
 
 invoke: push-bin
 	sam local invoke Push -e tests/foo.json

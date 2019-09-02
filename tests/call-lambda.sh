@@ -62,7 +62,7 @@ ssm() {
 }
 
 echo mysql -h $(ssm MYSQL_HOST) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
-if echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:push', '$(jq -c . $json | phony --max 1)' );" |
+if echo "CALL mysql.lambda_async( 'arn:aws:lambda:ap-southeast-1:$(acc $STAGE):function:ut_lambda2sqs_push', '$(jq -c . $json | phony --max 1)' );" |
 mysql -h $(ssm MYSQL_HOST) -P 3306 -u $(ssm LAMBDA_INVOKER_USERNAME) --password=$(ssm LAMBDA_INVOKER_PASSWORD)
 then
 	echo YES

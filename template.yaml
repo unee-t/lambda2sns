@@ -19,7 +19,7 @@ Resources:
   Push:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: push
+      FunctionName: ut_lambda2sqs_push
       Role: !GetAtt LambdaRole.Arn
       CodeUri: .
       Handler: push-bin
@@ -33,7 +33,7 @@ Resources:
     Properties:
       Role: !GetAtt LambdaRole.Arn
       CodeUri: .
-      FunctionName: process
+      FunctionName: ut_lambda2sqs_process
       VpcConfig:
         SecurityGroupIds: [!Ref DefaultSecurityGroup]
         SubnetIds: !Split [',', !Ref PrivateSubnets]
