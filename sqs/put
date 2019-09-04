@@ -1,8 +1,0 @@
-#!/bin/bash
-source ./.env
-test -f "$1" || exit
-if jq -e . >/dev/null 2>&1 <"$1"; then
-aws --profile uneet-dev sqs send-message --queue-url $QUEUE --message-body file://$1
-else
-	echo $1 is not JSON
-fi

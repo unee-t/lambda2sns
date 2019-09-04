@@ -40,6 +40,4 @@ MYSQL_PASSWORD=$(aws --profile $AWS_PROFILE ssm get-parameters --names UNTEDB_RO
 MYSQL_USER=$(aws --profile $AWS_PROFILE ssm get-parameters --names UNTEDB_ROOT_USER --with-decryption --query Parameters[0].Value --output text)
 MYSQL_HOST=$(aws --profile $AWS_PROFILE ssm get-parameters --names UNTEDB_HOST --with-decryption --query Parameters[0].Value --output text)
 
-echo $STAGE
-echo "SELECT * FROM log_lambdas ORDER BY id DESC LIMIT 10\G;" |
-mysql -s -h $MYSQL_HOST -P 3306 -u $MYSQL_USER --password=$MYSQL_PASSWORD unee_t_enterprise
+echo mysql -s -h $MYSQL_HOST -P 3306 -u $MYSQL_USER --password=$MYSQL_PASSWORD

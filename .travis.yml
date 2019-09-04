@@ -10,7 +10,8 @@ install:
 deploy:
   # dev
   - provider: script
-    script: aws configure set profile.uneet-dev.aws_access_key_id $AWS_ACCESS_KEY_ID &&
+    script: >
+      aws configure set profile.uneet-dev.aws_access_key_id $AWS_ACCESS_KEY_ID &&
       aws configure set profile.uneet-dev.aws_secret_access_key $AWS_SECRET_ACCESS_KEY &&
       aws configure set profile.uneet-dev.region ap-southeast-1 &&
       aws configure --profile uneet-dev list &&
@@ -20,7 +21,8 @@ deploy:
       branch: master
   # demo
   - provider: script
-    script: aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID &&
+    script: >
+       aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID &&
        aws configure set profile.uneet-demo.aws_secret_access_key $AWS_915001051872_SECRET &&
        aws configure set profile.uneet-demo.region ap-southeast-1 &&
        aws configure --profile uneet-demo list &&
@@ -30,7 +32,12 @@ deploy:
       branch: master
   # production
   - provider: script
-    script: AWS_ACCESS_KEY_ID=$AWS_192458993663_ID AWS_SECRET_ACCESS_KEY=$AWS_192458993663_SECRET make prod
+    script: >
+        aws configure set profile.uneet-prod.aws_access_key_id $AWS_192458993663_ID &&
+        aws configure set profile.uneet-prod.aws_secret_access_key $AWS_192458993663_SECRET &&
+        aws configure set profile.uneet-prod.region ap-southeast-1 &&
+        aws configure --profile uneet-prod list &&
+        make prod
     skip_cleanup: true
     on:
       branch: master
