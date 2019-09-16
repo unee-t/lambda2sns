@@ -30,6 +30,7 @@ func handler(ctx context.Context, evt json.RawMessage) error {
 		log.WithError(err).Error("failed to load AWS config")
 		return err
 	}
+	log.WithField("raw", string(evt)).Info("incoming")
 	base64Decoding, err := digest(evt)
 	if err != nil {
 		log.WithError(err).Error("failed to decode payload")
@@ -95,15 +96,18 @@ func digest(evt json.RawMessage) (out json.RawMessage, err error) {
 	log.WithField("input", input).Debug("input")
 	if rec, ok := input.(map[string]interface{}); ok {
 		for key, val := range rec {
-			log.Debugf(" [========>] %s = %s", key, val)
-			if val, ok := val.(string); ok {
-				data, err := base64.StdEncoding.DecodeString(val)
-				if err != nil {
-					log.WithError(err).Debug("ignore not base64")
-					data = []byte(val)
+			log.Infof(" [========>] %s = %s", key, val)
+			switch key {
+			case "firstName", "lastName", "phoneNumber", "name", "moreInfo", "streetAddress", "city", "state":
+				if val, ok := val.(string); ok {
+					data, err := base64.StdEncoding.DecodeString(val)
+					if err != nil {
+						log.WithError(err).Debug("ignore not base64")
+						data = []byte(val)
+					}
+					log.WithField("data", string(data)).Debug("decoded")
+					rec[key] = string(data)
 				}
-				log.WithField("data", string(data)).Debug("decoded")
-				rec[key] = string(data)
 			}
 		}
 		out, err = json.Marshal(rec)

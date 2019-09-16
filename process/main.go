@@ -308,13 +308,16 @@ SET @mefe_unit_id = '%s';
 SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
 SET @mefe_api_error_message = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_creation_unit_mefe_api_reply;`
 		filledSQL = fmt.Sprintf(templateSQL,
 			act.UnitCreationRequestID,
 			parsedResponse.ID,
 			parsedResponse.Timestamp.Format(sqlTimeLayout),
 			isCreatedByMe,
-			errorMessage)
+			errorMessage,
+			act.MEFERequestID,
+		)
 	case "CREATE_USER":
 		templateSQL := `SET @user_creation_request_id = %d;
 SET @mefe_user_id = '%s';
@@ -322,6 +325,7 @@ SET @creation_datetime = '%s';
 SET @is_created_by_me = %d;
 SET @mefe_api_error_message = '%s';
 SET @mefe_user_api_key = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_creation_user_mefe_api_reply;`
 		filledSQL = fmt.Sprintf(templateSQL,
 			act.UserCreationRequestID,
@@ -330,31 +334,36 @@ CALL ut_creation_user_mefe_api_reply;`
 			isCreatedByMe,
 			errorMessage,
 			parsedResponse.MefeAPIkey,
+			act.MEFERequestID,
 		)
 	case "ASSIGN_ROLE":
 		templateSQL := `SET @id_map_user_unit_permissions = %d;
 SET @creation_datetime = '%s';
 SET @mefe_api_error_message = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_creation_user_role_association_mefe_api_reply;`
-		filledSQL = fmt.Sprintf(templateSQL, act.IDmapUserUnitPermissions, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
+		filledSQL = fmt.Sprintf(templateSQL, act.IDmapUserUnitPermissions, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage, act.MEFERequestID)
 	case "EDIT_USER":
 		templateSQL := `SET @update_user_request_id = %d;
 SET @updated_datetime = '%s';
 SET @mefe_api_error_message = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_update_user_mefe_api_reply;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUserRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage, act.MEFERequestID)
 	case "EDIT_UNIT":
 		templateSQL := `SET @update_unit_request_id = %d;
 SET @updated_datetime = '%s';
 SET @mefe_api_error_message = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_update_unit_mefe_api_reply;`
-		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
+		filledSQL = fmt.Sprintf(templateSQL, act.UpdateUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage, act.MEFERequestID)
 	case "DEASSIGN_ROLE":
 		templateSQL := `SET @remove_user_from_unit_request_id = %d;
 SET @updated_datetime = '%s';
 SET @mefe_api_error_message = '%s';
+SET @mefe_api_request_id  = '%s';
 CALL ut_remove_user_role_association_mefe_api_reply;`
-		filledSQL = fmt.Sprintf(templateSQL, act.RemoveUserFromUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage)
+		filledSQL = fmt.Sprintf(templateSQL, act.RemoveUserFromUnitRequestID, parsedResponse.Timestamp.Format(sqlTimeLayout), errorMessage, act.MEFERequestID)
 	default:
 		return fmt.Errorf("Unknown type: %s, so no SQL template can be inferred", act.Type)
 	}

@@ -41,9 +41,9 @@ func Test_digest(t *testing.T) {
 			args: args{
 				// I don't know the structure of the JSON
 				// All I know is that SOMETIMES field values can be base64 encoded
-				evt: []byte(`{ "URL": "aHR0cHM6Ly9naXRodWIuY29tL3VuZWUtdC9iei1kYXRhYmFzZS9pc3N1ZXMvNzM=" }`),
+				evt: []byte(`{ "name": "aHR0cHM6Ly9naXRodWIuY29tL3VuZWUtdC9iei1kYXRhYmFzZS9pc3N1ZXMvNzM=" }`),
 			},
-			wantOut: []byte(`{ "URL": "https://github.com/unee-t/bz-database/issues/73" }`),
+			wantOut: []byte(`{ "name": "https://github.com/unee-t/bz-database/issues/73" }`),
 			wantErr: false,
 		},
 		{
@@ -57,9 +57,9 @@ func Test_digest(t *testing.T) {
 		{
 			name: "Jožko",
 			args: args{
-				evt: []byte(`{"test 1": "Sm/FvmtvIE1ya3ZpxI1rw6EgMQ==", "test 2": "Sm/FvmtvIE1ya3ZpxI1rw6EgMg=="}`),
+				evt: []byte(`{"streetAddress": "Sm/FvmtvIE1ya3ZpxI1rw6EgMQ==", "name": "Sm/FvmtvIE1ya3ZpxI1rw6EgMg==", "type": "Room"}`),
 			},
-			wantOut: []byte(`{"test 1": "Jožko Mrkvičká 1", "test 2": "Jožko Mrkvičká 2"}`),
+			wantOut: []byte(`{"streetAddress": "Jožko Mrkvičká 1", "name": "Jožko Mrkvičká 2", "type": "Room"}`),
 			wantErr: false,
 		},
 	}
