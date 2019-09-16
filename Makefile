@@ -5,7 +5,7 @@ DEPLOY_S3_PREFIX = lambda2sqs
 
 .PHONY: clean build test deploy
 
-build: push-bin process-bin validate
+build: push-bin process-bin
 
 push-bin: push/
 	cd push; GO111MODULE=on go mod tidy; GOOS=linux GOARCH=amd64 go build -o ../push-bin .
@@ -27,7 +27,7 @@ destroy:
 		--stack-name $(STACK_NAME)
 
 validate: template.yaml
-	sam validate --template template.yaml
+	AWS_PROFILE=uneet-dev sam validate --template template.yaml
 
 dev: build
 	AWS_PROFILE=uneet-dev sam package --template-file template.yaml --s3-bucket dev-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
