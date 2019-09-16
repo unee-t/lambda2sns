@@ -157,7 +157,7 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 		UnitCreationRequestID       int    `json:"unitCreationRequestId,omitempty"`
 		UserCreationRequestID       int    `json:"userCreationRequestId,omitempty"`
 		IDmapUserUnitPermissions    int    `json:"idMapUserUnitPermission,omitempty"`
-		MEFIRequestID               string `json:"mefeAPIRequestId,omitempty"`
+		MEFERequestID               string `json:"mefeAPIRequestId,omitempty"`
 		UpdateUserRequestID         int    `json:"updateUserRequestId,omitempty"`
 		UpdateUnitRequestID         int    `json:"updateUnitRequestId,omitempty"`
 		RemoveUserFromUnitRequestID int    `json:"removeUserFromUnitRequestId,omitempty"`
@@ -174,7 +174,7 @@ func (c withRequestID) actionTypeDB(evt json.RawMessage) (err error) {
 	}
 
 	ctx := c.log.WithField("actionType", act)
-	if act.MEFIRequestID == "" {
+	if act.MEFERequestID == "" {
 		ctx.Error("missing mefeAPIRequestId")
 		return fmt.Errorf("missing mefeAPIRequestId")
 	}
