@@ -11,34 +11,19 @@ install:
 deploy:
   # dev
   - provider: script
-    script: >
-      aws configure set profile.uneet-dev.aws_access_key_id $AWS_ACCESS_KEY_ID &&
-      aws configure set profile.uneet-dev.aws_secret_access_key $AWS_SECRET_ACCESS_KEY &&
-      aws configure set profile.uneet-dev.region ap-southeast-1 &&
-      aws configure --profile uneet-dev list &&
-      make deploy
+    script: aws configure set profile.uneet-dev.aws_access_key_id $AWS_ACCESS_KEY_ID && aws configure set profile.uneet-dev.aws_secret_access_key $AWS_SECRET_ACCESS_KEY && aws configure set profile.uneet-dev.region ap-southeast-1 && aws configure --profile uneet-dev list && make deploy
     skip_cleanup: true
     on:
       branch: master
   # demo
   - provider: script
-    script: >
-       aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID &&
-       aws configure set profile.uneet-demo.aws_secret_access_key $AWS_915001051872_SECRET &&
-       aws configure set profile.uneet-demo.region ap-southeast-1 &&
-       aws configure --profile uneet-demo list &&
-       make demo
+    script: aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID && aws configure set profile.uneet-demo.aws_secret_access_key $AWS_915001051872_SECRET && aws configure set profile.uneet-demo.region ap-southeast-1 && aws configure --profile uneet-demo list && make demo
     skip_cleanup: true
     on:
       branch: master
   # production
   - provider: script
-    script: >
-        aws configure set profile.uneet-prod.aws_access_key_id $AWS_192458993663_ID &&
-        aws configure set profile.uneet-prod.aws_secret_access_key $AWS_192458993663_SECRET &&
-        aws configure set profile.uneet-prod.region ap-southeast-1 &&
-        aws configure --profile uneet-prod list &&
-        make prod
+    script: aws configure set profile.uneet-prod.aws_access_key_id $AWS_192458993663_ID && aws configure set profile.uneet-prod.aws_secret_access_key $AWS_192458993663_SECRET && aws configure set profile.uneet-prod.region ap-southeast-1 && aws configure --profile uneet-prod list && make prod
     skip_cleanup: true
     on:
       branch: master
