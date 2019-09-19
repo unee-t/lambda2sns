@@ -11,8 +11,7 @@ install:
 deploy:
   # dev
   - provider: script
-    script: >
-        aws configure set profile.uneet-dev.aws_access_key_id $AWS_812644853088_ID &&
+    script: aws configure set profile.uneet-dev.aws_access_key_id $AWS_812644853088_ID &&
         aws configure set profile.uneet-dev.aws_secret_access_key $AWS_812644853088_SECRET &&
         aws configure set profile.uneet-dev.region ap-southeast-1 &&
         aws configure --profile uneet-dev list &&
