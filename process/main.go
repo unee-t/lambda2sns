@@ -379,7 +379,12 @@ CALL ut_remove_user_role_association_mefe_api_reply;`
 		// https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html
 		return err
 	}
-	// c.log.WithField("stats", DB.Stats()).Info("exec sql")
+
+	c.log.WithFields(log.Fields{
+		"stats":     DB.Stats(),
+		"filledSQL": filledSQL,
+	}).Info("ran SQL without error")
+
 	if errorMessage != "" && res.StatusCode >= 500 {
 		// Payload is valid, but the action took took long (POST time out, database time out)
 		return errors.New(errorMessage)
