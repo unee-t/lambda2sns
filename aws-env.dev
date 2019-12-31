@@ -1,8 +1,8 @@
-##this file store all evronment variables.
+## This file store all environment variables for the DEV environment
 PROJECT = lambda2sqs
 AWS_REGION = ap-southeast-1
 DEPLOY_S3_PREFIX = lambda2sqs
 AWS_PROFILE = uneet-dev
-DefaultSecurityGroup = sg-d8dde8a6
-##PrivateSubnets = Not Created yet.
+DEFAULT_SECURITY_GROUP = sg-d8dde8a6
+##PRIVATE_SUBNETS = Not Created yet.
 
