@@ -1,8 +1,29 @@
-## This file store all environment variables for the DEV environment
-PROJECT = lambda2sqs
-AWS_REGION = ap-southeast-1
-DEPLOY_S3_PREFIX = lambda2sqs
-AWS_PROFILE = uneet-dev
-DEFAULT_SECURITY_GROUP = sg-d8dde8a6
-##PRIVATE_SUBNETS = Not Created yet.
+## This file stores all environment variables for the DEV environment for this repo
 
+# First, we create a procedure to retrieve the variables from the AWS parameter store
+# Make sure to 
+#   - configure your AWS CLI accordingly
+#   - update the profile you need to use to access these variables if needed
+
+    getparam () {
+        aws --profile ins-dev ssm get-parameters --names "$1" --with-decryption --query Parameters[0].Value --output text
+    }
+
+# We prepare the hardcoded variables that we will need to deploy what's needed
+
+    PROJECT=lambda2sqs
+    DEPLOY_S3_PREFIX=lambda2sqs
+    STAGE=dev
+
+# Variables that are maintained in the AWS parameter store for the environment:
+
+    AWS_REGION=$(getparam DEFAULT_REGION)
+    DEFAULT_SECURITY_GROUP=$(getparam DEFAULT_SECURITY_GROUP)
+    PRIVATE_SUBNET_1=$(getparam PRIVATE_SUBNET_1)
+    PRIVATE_SUBNET_2=$(getparam PRIVATE_SUBNET_2)
+    PRIVATE_SUBNET_3=$(getparam PRIVATE_SUBNET_3)
+
+# Variables that are built from other variables:
+
+    AWS_PROFILE=$(getparam INSTALLATION_ID)-$STAGE
+    PRIVATE_SUBNETS=$PRIVATE_SUBNET_1,$PRIVATE_SUBNET_2,$PRIVATE_SUBNET_3
