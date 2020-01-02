@@ -19,7 +19,7 @@
     export DEPLOY_S3_PREFIX=lambda2sqs
     export STAGE=dev
     export STACK_NAME=$PROJECT
-    export AWS_PROFILE=ins-dev
+
 # Variables that are maintained in the AWS parameter store for the environment:
 
     export AWS_REGION=$(getparam DEFAULT_REGION)
@@ -37,4 +37,3 @@
 
     export AWS_PROFILE=$(getparam INSTALLATION_ID)-$STAGE
     export PRIVATE_SUBNETS=$PRIVATE_SUBNET_1,$PRIVATE_SUBNET_2,$PRIVATE_SUBNET_3
-    
