@@ -12,23 +12,23 @@ deploy:
   # dev
   - provider: script
   #TODO Explore if we can replace installation ID stage uneet-dev with variable 
-    script: aws configure set profile.uneet-dev.aws_access_key_id $AWS_812644853088_ID &&
-        aws configure set profile.uneet-dev.aws_secret_access_key $AWS_812644853088_SECRET &&
-        aws configure set profile.uneet-dev.region ap-southeast-1 &&
-        aws configure --profile uneet-dev list &&
+    script: aws configure set profile.ins-dev.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEV &&
+        aws configure set profile.ins-dev.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEV &&
+        aws configure set profile.ins-dev.region $AWS_DEFAULT_REGION &&
+        aws configure --profile ins-dev list &&
         make deploy
     skip_cleanup: true
     on:
       branch: master
   # demo
   - provider: script
-    script: aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID && aws configure set profile.uneet-demo.aws_secret_access_key $AWS_915001051872_SECRET && aws configure set profile.uneet-demo.region ap-southeast-1 && aws configure --profile uneet-demo list && make demo
+    script: aws configure set profile.ins-demo.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEMO && aws configure set profile.ins-demo.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEMO && aws configure set profile.ins-demo.region $AWS_DEFAULT_REGION && aws configure --profile ins-demo list && make demo
     skip_cleanup: true
     on:
       branch: master
   # production
   - provider: script
-    script: aws configure set profile.uneet-prod.aws_access_key_id $AWS_192458993663_ID && aws configure set profile.uneet-prod.aws_secret_access_key $AWS_192458993663_SECRET && aws configure set profile.uneet-prod.region ap-southeast-1 && aws configure --profile uneet-prod list && make prod
+    script: aws configure set profile.ins-prod.aws_access_key_id $AWS_ACCOUNT_USER_ID_PROD && aws configure set profile.ins-prod.aws_secret_access_key $AWS_ACCOUNT_SECRET_PROD && aws configure set profile.ins-prod.region $AWS_DEFAULT_REGION && aws configure --profile ins-prod list && make prod
     skip_cleanup: true
     on:
       branch: master
