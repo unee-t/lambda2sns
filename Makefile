@@ -1,6 +1,5 @@
-include aws-env.$(env)
 
-.PHONY: clean build test deploy
+.PHONY: clean build test deploy 
 
 build: push-bin process-bin
 
@@ -27,16 +26,16 @@ validate: template.yaml
 	sam validate --template template.yaml
 
 dev: build
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket dev-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
-	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
+	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
+	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(PROJECT) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
 
 demo: build
 	ls
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket demo-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
+	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
 	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
 
 prod: build
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket prod-media-unee-t --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
+	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
 	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
 
 lint:
