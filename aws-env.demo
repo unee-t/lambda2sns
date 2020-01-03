@@ -1,5 +1,5 @@
 #!/bin/bash
-## This file stores all environment variables for the DEV environment for this repo
+## This file stores all environment variables for the DEMO environment for this repo
 
 # First, we create a procedure to retrieve the variables from the AWS parameter store
 # Make sure to 
@@ -8,7 +8,7 @@
 
     getparam () {
         #When we run this command, we get the issue: no matches found: Parameters[0].Value.
-        #aws --profile ins-dev ssm get-parameters --names "$1" --with-decryption --query Parameters[0].Value --output text
+        #aws --profile ins-demo ssm get-parameters --names "$1" --with-decryption --query Parameters[0].Value --output text
         #So I changed the command like below, and It works!
         aws --profile ins-demo ssm get-parameters --names "$1" --with-decryption  --output text | awk '{print $6}'
     }
