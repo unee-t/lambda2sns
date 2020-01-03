@@ -4,7 +4,8 @@
 #To run this script, run this command: ./deploy.sh [STAGE] where STAGE is dev, demo or prod
 #
 #Step 1: Setup the parameters
-export AWS_PROFILE=ins-dev
+export INSTALLATION_ID=ins
+export AWS_PROFILE=$INSTALLATION_ID-$1
 source aws-env.$1
 
 #Step 2: Run Makefile.
