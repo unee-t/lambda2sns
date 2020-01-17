@@ -1,5 +1,12 @@
+PROJECT = lambda2sqs
+STACK_NAME ?= $(PROJECT)
+AWS_REGION = ap-southeast-1
+DEPLOY_S3_PREFIX = lambda2sqs
+AWS_PROFILE = ins-dev
 
-.PHONY: clean build test deploy 
+define ssm
+$(shell aws --profile $(AWS_PROFILE) ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text)
+endef
 
 build: push-bin process-bin
 
@@ -23,20 +30,12 @@ destroy:
 		--stack-name $(STACK_NAME)
 
 validate: template.yaml
-	sam validate --template template.yaml
+	sam validate --profile $(AWS_PROFILE) --template template.yaml
 
-dev: build
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
-	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(PROJECT) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
-
-demo: build
-	ls
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
-	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
-
-prod: build
-	sam package --template-file template.yaml --profile $(AWS_PROFILE) --s3-bucket $(S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
-	sam deploy --template-file ./packaged.yaml --profile $(AWS_PROFILE) --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM --parameter-overrides DefaultSecurityGroup=$(DEFAULT_SECURITY_GROUP) PrivateSubnets=$(PRIVATE_SUBNETS)
+deploy: build
+	sam package --profile $(AWS_PROFILE) --template-file template.yaml --s3-bucket $(call ssm,S3_BUCKET_NAME) --s3-prefix $(DEPLOY_S3_PREFIX) --output-template-file packaged.yaml
+	sam deploy --profile $(AWS_PROFILE) --template-file ./packaged.yaml --stack-name $(STACK_NAME) --capabilities CAPABILITY_IAM \
+	--parameter-overrides DefaultSecurityGroup=$(call ssm,DEFAULT_SECURITY_GROUP) PrivateSubnets=$(call ssm,PRIVATE_SUBNET_1),$(call ssm,PRIVATE_SUBNET_2),$(call ssm,PRIVATE_SUBNET_3)
 
 lint:
 	cfn-lint template.yaml

@@ -29,19 +29,11 @@ install:
 deploy:
   # dev
   - provider: script
-    script: aws configure set profile.$AWS_PROFILE_DEV.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEV && aws configure set profile.$AWS_PROFILE_DEV.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEV && aws configure set profile.$AWS_PROFILE_DEV.region $AWS_DEFAULT_REGION && aws configure --profile $AWS_PROFILE_DEV list && ./deploy.sh dev
-    skip_cleanup: true
-    on:
-      branch: master
-  # demo
-  - provider: script
-    script: aws configure set profile.$AWS_PROFILE_DEMO.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEMO && aws configure set profile.$AWS_PROFILE_DEMO.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEMO && aws configure set profile.$AWS_PROFILE_DEMO.region $AWS_DEFAULT_REGION && aws configure --profile $AWS_PROFILE_DEMO list && ./deploy.sh demo
-    skip_cleanup: true
-    on:
-      branch: master
-  # production
-  - provider: script
-    script: aws configure set profile.$AWS_PROFILE_PROD.aws_access_key_id $AWS_ACCOUNT_USER_ID_PROD && aws configure set profile.$AWS_PROFILE_PROD.aws_secret_access_key $AWS_ACCOUNT_SECRET_PROD && aws configure set profile.$AWS_PROFILE_PROD.region $AWS_DEFAULT_REGION && aws configure --profile $AWS_PROFILE_PROD list && ./deploy.sh prod
+    script: aws configure set profile.$AWS_PROFILE_DEV.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEV &&
+        aws configure set profile.$AWS_PROFILE_DEV.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEV &&
+        aws configure set profile.$AWS_PROFILE_DEV.region $AWS_DEFAULT_REGION &&
+        aws configure --profile $AWS_PROFILE_DEV list &&
+        make deploy
     skip_cleanup: true
     on:
       branch: master

@@ -31,8 +31,7 @@ do
 			;;
 	esac
 done
-#This Parameter is in aws-env.STAGE file
-#AWS_PROFILE=uneet-$STAGE
+AWS_PROFILE=ins-$STAGE
 shift "$((OPTIND-1))"   # Discard the options and sentinel --
 
 echo Connecting to ${STAGE^^}

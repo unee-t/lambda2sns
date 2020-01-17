@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/unee-t/env"
+	"github.com/unee-t-ins/env"
 )
 
 type withRequestID struct {
@@ -42,7 +42,7 @@ func main() {
 	input := &sts.GetCallerIdentityInput{}
 
 	req := stssvc.GetCallerIdentityRequest(input)
-	result, err := req.Send()
+	result, err := req.Send(context.TODO())
 	if err != nil {
 		log.WithError(err).Fatal("failed to call stssvc")
 	}

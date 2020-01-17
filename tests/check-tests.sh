@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ssm() {
-	aws --profile uneet-dev ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text
+	aws --profile ins-dev ssm get-parameters --names $1 --with-decryption --query Parameters[0].Value --output text
 }
 
 echo "select * from ut_map_external_source_users;" |
