@@ -1,3 +1,21 @@
+#Variables for this script are stored on Travis
+#Variables need for this script:
+#For dev environment:
+  # - AWS_PROFILE_DEV
+  # - AWS_ACCOUNT_USER_ID_DEV
+  # - AWS_ACCOUNT_SECRET_DEV
+  # - AWS_DEFAULT_REGION
+#For Demo environment:
+  # - AWS_PROFILE_DEMO
+  # - AWS_ACCOUNT_USER_ID_DEMO
+  # - AWS_ACCOUNT_SECRET_DEMO
+  # - AWS_DEFAULT_REGION
+#For Prod environment:
+  # - AWS_PROFILE_PROD
+  # - AWS_ACCOUNT_USER_ID_PROD
+  # - AWS_ACCOUNT_SECRET_PROD
+  # - AWS_DEFAULT_REGION
+  
 sudo: required
 language: go
 go:
@@ -11,23 +29,11 @@ install:
 deploy:
   # dev
   - provider: script
-    script: aws configure set profile.uneet-dev.aws_access_key_id $AWS_812644853088_ID &&
-        aws configure set profile.uneet-dev.aws_secret_access_key $AWS_812644853088_SECRET &&
-        aws configure set profile.uneet-dev.region ap-southeast-1 &&
-        aws configure --profile uneet-dev list &&
+    script: aws configure set profile.$AWS_PROFILE_DEV.aws_access_key_id $AWS_ACCOUNT_USER_ID_DEV &&
+        aws configure set profile.$AWS_PROFILE_DEV.aws_secret_access_key $AWS_ACCOUNT_SECRET_DEV &&
+        aws configure set profile.$AWS_PROFILE_DEV.region $AWS_DEFAULT_REGION &&
+        aws configure --profile $AWS_PROFILE_DEV list &&
         make deploy
-    skip_cleanup: true
-    on:
-      branch: master
-  # demo
-  - provider: script
-    script: aws configure set profile.uneet-demo.aws_access_key_id $AWS_915001051872_ID && aws configure set profile.uneet-demo.aws_secret_access_key $AWS_915001051872_SECRET && aws configure set profile.uneet-demo.region ap-southeast-1 && aws configure --profile uneet-demo list && make demo
-    skip_cleanup: true
-    on:
-      branch: master
-  # production
-  - provider: script
-    script: aws configure set profile.uneet-prod.aws_access_key_id $AWS_192458993663_ID && aws configure set profile.uneet-prod.aws_secret_access_key $AWS_192458993663_SECRET && aws configure set profile.uneet-prod.region ap-southeast-1 && aws configure --profile uneet-prod list && make prod
     skip_cleanup: true
     on:
       branch: master
